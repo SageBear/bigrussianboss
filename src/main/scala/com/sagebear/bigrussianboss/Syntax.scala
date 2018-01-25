@@ -67,5 +67,5 @@ object Syntax {
 
   case class Rule[T](context: Subject, action: Utterance[T])
   case class Пример(items: Rule[_]*)
-  def примеры(items: Пример*): DialogTree = DialogTree(items)
+  def примеры(items: Пример*) = Script(items)
 }
