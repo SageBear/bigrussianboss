@@ -1,10 +1,7 @@
 package com.sagebear.bigrussianboss
 
-import com.sagebear.bigrussianboss.Script.Node
 import com.sagebear.bigrussianboss.Syntax._
 import org.scalatest.FlatSpec
-
-import scala.language.postfixOps
 
 class ScriptTreeMixinTest extends FlatSpec {
   val examples: Script = примеры(

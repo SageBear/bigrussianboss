@@ -65,7 +65,9 @@ object Syntax {
     val utterances: Set[String] = Set("слоны идут на север", "епта", "коза")
   }
 
-  case class Rule[T](context: Subject, action: Utterance[T])
+  case class Rule[T](context: Subject, action: Utterance[T]) {
+    override def toString: String = s"$context: $action"
+  }
   case class Пример(items: Rule[_]*)
   def примеры(items: Пример*) = Script(items)
 }

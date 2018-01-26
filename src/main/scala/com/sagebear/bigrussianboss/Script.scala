@@ -6,19 +6,26 @@ class Script(protected val children: Seq[Script.Node]) extends Script.TreeMixin[
   protected def children(children: Seq[Script.Node]) = new Script(children)
 
   override def toString: String = {
-    val SPACE_WIDTH = 4
-    def center(node: Script.Node): Int = node.nodes.count(_.children.isEmpty) / 2 * SPACE_WIDTH
-    def line(nodes: Seq[Script.Node], acc: String = ""): String =
-      if (nodes.isEmpty) acc
+    import Extensions._
+    val CAPTION_LEN = 30
+    def level(captions: Seq[(String, Int)], acc: String): String =
+      if (captions.isEmpty) acc
+      else level(captions.tail,
+          acc + " " * ((captions.head._2 - 1) * CAPTION_LEN / 2) +
+            captions.head._1.wrap(CAPTION_LEN) +
+            " " * ((3 * CAPTION_LEN + 2) / 2 - captions.head._1.length)
+        )
+    def levels(nodes: Seq[Option[Script.Node]], acc: Seq[String]): Seq[String] =
+      if (nodes.forall(_.isEmpty)) acc
       else {
-        val halfWidth = center(nodes.head)
-        line(nodes.tail, acc + " " * halfWidth + nodes.head.value.action + " " * halfWidth)
+        val procNodes = nodes.map {
+          case Some(n) => ((n.value.toString, n.nodes.count(_.children.isEmpty)),
+            if (n.children.isEmpty) Seq(None) else n.children.map(Some(_)))
+          case None => ((" " * CAPTION_LEN, 1), Seq(None))
+        }
+        levels(procNodes.flatMap(_._2), acc :+ level(procNodes.map(_._1), ""))
       }
-    def levels(nodes: Seq[Script.Node], acc: Seq[Seq[Script.Node]]): Seq[Seq[Script.Node]] =
-      if (nodes.isEmpty) acc
-      else levels(nodes.flatMap(_.children), acc :+ nodes)
-
-    levels(children, Seq.empty).foldLeft("") { case (acc, level) => acc + "\n" + line(level) }
+    levels(children.map(Some(_)), Seq.empty).mkString("\n")
   }
 }
 
