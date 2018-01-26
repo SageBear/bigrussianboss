@@ -1,10 +1,12 @@
 package com.sagebear.bigrussianboss
 
-import com.sagebear.bigrussianboss.Syntax._
+import com.sagebear.bigrussianboss.domain.Beer._
 import org.scalatest.FlatSpec
 
+import scala.language.postfixOps
+
 class ScriptTreeMixinTest extends FlatSpec {
-  val examples: Script = примеры(
+  val script: Script = примеры(
     Пример(
       Клиент приветствует,
       Оператор приветствует,
@@ -33,6 +35,11 @@ class ScriptTreeMixinTest extends FlatSpec {
   )
 
   it should "work" in {
-    println(examples)
+    println(
+      script.examples(
+        Оператор -> Map("address" -> "ул. Стойкости", "phone" -> "89645091637"),
+        Клиент -> Map("address" -> "ул. Стойкости", "phone" -> "89645091637")
+      ).mkString("\n---------\n")
+    )
   }
 }

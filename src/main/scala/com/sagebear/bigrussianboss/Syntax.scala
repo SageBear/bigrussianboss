@@ -1,73 +1,115 @@
 package com.sagebear.bigrussianboss
 
-object Syntax {
-  import Extensions._
+import Extensions._
 
-  sealed trait Subject {
-    def приветствует: Rule[Unit] = Rule(this, Hello)
-    def прощается: Rule[Unit] = Rule(this, Bye)
-    def спрашивает(question: Utterance[Unit]): Rule[Unit] = Rule(this, question)
-    def говорит[T](answer: Utterance[T]): Rule[T] = Rule(this, answer)
-    def отвечает[T](answer: Utterance[T]): Rule[T] = говорит(answer)
-  }
-
-  case object Клиент extends Subject
-  case object Оператор extends Subject
-
-  sealed trait Utterance[T] {
-    def generate(params: T): String
-    def parse(candidate: String): Option[T]
+trait Syntax {
+  trait Subject {
+    def приветствует: Rule = Rule(this, Hello)
+    def прощается: Rule = Rule(this, Bye)
+    def спрашивает(question: Utterance): Rule = Rule(this, question)
+    def говорит(answer: Utterance): Rule = Rule(this, answer)
+    def отвечает(answer: Utterance): Rule = говорит(answer)
   }
 
-  trait SimpleUtterance extends Utterance[Unit] {
-    val utterances: Set[String]
-
-    def и(q: SimpleUtterance): SimpleUtterance = if (q.hashCode() > this.hashCode()) QuestionAnd(q, this) else QuestionAnd(this, q)
-
-    def generate(void: Unit): String = utterances.choose.head
-    def parse(candidate: String): Option[Unit] = if (utterances.contains(candidate)) Some(()) else None
+  case class Rule(subject: Subject, utterance: Utterance) {
+    override def toString: String = s"$subject: $utterance"
   }
 
-  case object Про_покупку_пива extends SimpleUtterance {
-    val utterances: Set[String] = Set("пивчан хочу!", "где мне попить пива?", "где найти пива?")
-  }
-  case object Адрес extends SimpleUtterance {
-    val utterances: Set[String] = Set("где ты живешь?", "скажи свой адрес", "ты с каого района, епта?")
-  }
-  case object Телефон extends SimpleUtterance {
-    val utterances: Set[String] = Set("твой телефон?", "цифры телефона скажи, епта", "твоя мобила?")
+  protected type CompileRule = PartialFunction[Utterance, String]
+  protected def utterance2text(context: Map[String, String]): CompileRule
+
+  trait Utterance {
+    def и(q: Utterance): Utterance = if (q.hashCode() > this.hashCode()) And(q, this) else And(this, q)
+
+    def text(context: Map[String, String]): String = utterance2text(context).orElse[Utterance, String] {
+      case And(q1, q2) => q1.text(context) + " и " + q2.text(context)
+
+      case Bye => Set("бывай", "будь", "покеда, епта").choose.head
+      case Hello => Set("привет, епта", "здарова, отец", "чо как?").choose.head
+      case Глупости => Set("слоны идут на север", "епта", "коза").choose.head
+    }.applyOrElse[Utterance, String](this, _ => "хз")
   }
 
-  case class QuestionAnd(q1: SimpleUtterance, q2: SimpleUtterance) extends SimpleUtterance {
-    val utterances: Set[String] = q1.utterances ++ q2.utterances
+  case class And(q1: Utterance, q2: Utterance) extends Utterance
+
+  case object Hello extends Utterance
+  case object Bye extends Utterance
+  case object Глупости extends Utterance
+
+  case class Пример(items: Rule*)
+  def примеры(items: Пример*): Script = {
+    items.map(_.items).map { items =>
+      items.dropRight(1).foldRight(Script.Node(items.last, Seq.empty)) { case (rule, totalN) => Script.Node(rule, Seq.empty).insert(totalN) }
+    }.foldLeft(new Script(Seq.empty)) { case (res, example) => res.insert(example) }
   }
 
-  case object Свой_адрес extends Utterance[String] {
-    def generate(address: String): String = address
-    def parse(utterance: String): Option[String] = ???
-  }
-  case object Свой_телефон extends Utterance[String] {
-    def generate(phone: String): String = phone
-    def parse(utterance: String): Option[String] = ???
-  }
-  case object Где_купить_пиво extends Utterance[(String, String)] {
-    def generate(addressAndPhone: (String, String)): String = s"Иди в ближайший к ${addressAndPhone._1} ларек. а еще ответь на смску, я ее послали на ${addressAndPhone._2}"
-    def parse(utterance: String): Option[(String, String)] = ???
+  class Script(protected val children: Seq[Script.Node]) extends Script.TreeMixin[Script] {
+    protected def children(children: Seq[Script.Node]) = new Script(children)
+
+    private def sampleNode(node: Script.Node, context: Map[Subject, Map[String, String]]) = context.get(node.value.subject).map { vars =>
+      node.value.utterance.text(vars)
+    }.getOrElse("...can't compute...")
+
+    def examples(context: (Subject, Map[String, String])*): Stream[String] = {
+      val cx = context.toMap[Subject, Map[String, String]]
+      def dts(node: Script.Node): Stream[String] =
+        if (node.children.isEmpty) sampleNode(node, cx) #:: Stream.empty[String]
+        else node.children.toStream.flatMap(dts(_).map(sampleNode(node, cx) + "\n" + _))
+      this.children.toStream.flatMap(dts)
+    }
+
+    override def toString: String = {
+      import Extensions._
+      val CAPTION_LEN = 30
+      def level(captions: Seq[(String, Int)], acc: String): String =
+        if (captions.isEmpty) acc
+        else level(captions.tail,
+          acc + " " * ((captions.head._2 - 1) * CAPTION_LEN / 2) +
+            captions.head._1.wrap(CAPTION_LEN) +
+            " " * ((3 * CAPTION_LEN + 2) / 2 - captions.head._1.length)
+        )
+      def levels(nodes: Seq[Option[Script.Node]], acc: Seq[String]): Seq[String] =
+        if (nodes.forall(_.isEmpty)) acc
+        else {
+          val procNodes = nodes.map {
+            case Some(n) => ((n.value.toString, n.nodes.count(_.children.isEmpty)),
+              if (n.children.isEmpty) Seq(None) else n.children.map(Some(_)))
+            case None => ((" " * CAPTION_LEN, 1), Seq(None))
+          }
+          levels(procNodes.flatMap(_._2), acc :+ level(procNodes.map(_._1), ""))
+        }
+      levels(children.map(Some(_)), Seq.empty).mkString("\n")
+    }
   }
 
-  case object Hello extends SimpleUtterance {
-    val utterances: Set[String] = Set("привет, епта", "здарова, отец", "чо как?")
-  }
-  case object Bye extends SimpleUtterance {
-    val utterances: Set[String] = Set("бывай", "будь", "покеда, епта")
-  }
-  case object Глупости extends SimpleUtterance {
-    val utterances: Set[String] = Set("слоны идут на север", "епта", "коза")
-  }
+  object Script {
+    trait TreeMixin[T <: TreeMixin[_]] {
+      protected val children: Seq[Node]
+      //TODO: ordering
+      def insert(node: Node): T = {
+        children.zipWithIndex.find { case (n, _) => n.value == node.value } match {
+          case None => children(children :+ node)
+          case Some((ch, i)) =>
+            val newChildren = node.children.foldLeft(ch) { case (acc, n) => acc.insert(n) }
+            children(children.updated(i, newChildren))
+        }
+      }
 
-  case class Rule[T](context: Subject, action: Utterance[T]) {
-    override def toString: String = s"$context: $action"
+      protected def children(child: Seq[Node]): T
+    }
+
+    case class Node(value: Rule, children: Seq[Node]) extends TreeMixin[Node] {
+      protected def children(children: Seq[Node]) = Node(value, children)
+
+      def nodes: Seq[Node] = {
+        def expandNode(node: Node, frontier: Seq[Node], acc: Seq[Node]): Seq[Node] = {
+          val newFrontier = frontier ++ node.children
+          if (newFrontier.isEmpty) node +: acc
+          else expandNode(newFrontier.head, newFrontier.tail, node +: acc)
+        }
+        expandNode(this, Seq.empty, Seq.empty)
+      }
+    }
   }
-  case class Пример(items: Rule[_]*)
-  def примеры(items: Пример*) = Script(items)
 }
+

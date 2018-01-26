@@ -1,7 +1,8 @@
-import com.sagebear.bigrussianboss.Script
-import com.sagebear.bigrussianboss.Syntax._
+import com.sagebear.bigrussianboss.domain.Beer._
 
-val examples = примеры(
+import scala.language.postfixOps
+
+val script = примеры(
   Пример(
     Клиент приветствует,
     Оператор приветствует,
@@ -29,8 +30,4 @@ val examples = примеры(
   )
 )
 
-def dts(sc: Script): Stream[String] = {
-  
-
-  ???
-}
+script.examples
