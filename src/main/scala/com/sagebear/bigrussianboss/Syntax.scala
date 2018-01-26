@@ -47,7 +47,7 @@ trait Syntax {
     protected def children(children: Seq[Script.Node]) = new Script(children)
 
     private def sampleNode(node: Script.Node, context: Map[Subject, Map[String, String]]) = context.get(node.value.subject).map { vars =>
-      node.value.utterance.text(vars)
+      node.value.subject.toString + ": " + node.value.utterance.text(vars)
     }.getOrElse("...can't compute...")
 
     def examples(context: (Subject, Map[String, String])*): Stream[String] = {
