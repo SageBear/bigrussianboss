@@ -1,6 +1,8 @@
 package com.sagebear.bigrussianboss
 
-import com.sagebear.bigrussianboss.domain.Beer._
+import com.sagebear.bigrussianboss.Script._
+import com.sagebear.bigrussianboss.bot.{BotIO, TestBot}
+import com.sagebear.bigrussianboss.intent.Intents._
 import org.scalatest.FlatSpec
 
 import scala.language.postfixOps
@@ -36,10 +38,9 @@ class ScriptTreeMixinTest extends FlatSpec {
 
   it should "work" in {
     println(
-      script.examples(
-        Оператор -> Map("address" -> "ул. Стойкости", "phone" -> "89645091637"),
-        Клиент -> Map("address" -> "ул. Стойкости", "phone" -> "89645091637")
-      ).mkString("\n---------\n")
+      BotIO.encode(TestBot(Клиент), Map("address" -> "ул. Стойкости", "phone" -> "89645091637"), TestBot(Оператор),
+        Map("address" -> "ул. Стойкости", "phone" -> "89645091637"))(script)
+          .map(_.mkString("\n")).mkString("\n---------\n")
     )
   }
 }
