@@ -5,22 +5,22 @@ import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.Script.{Action, Subject, Клиент}
 import com.sagebear.bigrussianboss.ner.NerMarkup
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
-import scala.concurrent.ExecutionContext.Implicits.global
 /**
   * @author vadim
   * @since 30.01.2018
   */
 trait BotIO {
-  def encode(a: Action, context: BotIO.Context): Future[BotIO.EncodedUtterance]
-  def decode(text: String): Future[(Action, BotIO.Context)]
+  def encode(a: Action, context: BotIO.Context)(implicit ec: ExecutionContext): Future[BotIO.EncodedUtterance]
+  def decode(text: String)(implicit ec: ExecutionContext): Future[(Action, BotIO.Context)]
 }
 
 object BotIO {
+  import scala.concurrent.ExecutionContext.Implicits.global
   case object EncodeImpossible extends RuntimeException with NoStackTrace
+  private type Node = Tree[Script.Step]
 
   case class EncodedUtterance(owner: Subject, text: String, bioMarkup: Seq[(String, NerMarkup.NerTag)], intentName: Set[Action]) {
     override def toString: String = s"$owner: $text"
@@ -28,23 +28,17 @@ object BotIO {
   type EncodedDialog = Seq[EncodedUtterance]
   type Context = Map[String, String]
 
-  private def dts[T](node: Tree[Script.Step], process: Tree[Script.Step] => EncodedUtterance): Stream[EncodedDialog] =
+  private def dts[T](node: Node, process: Node => EncodedUtterance): Stream[EncodedDialog] =
     if(node.children.isEmpty) Seq(process(node)) #:: Stream.empty[EncodedDialog]
     else node.children.toStream.flatMap(dts(_, process).map(process(node) +: _))
 
   def encode(client: BotIO, clientContext: Context, operator: BotIO, operatorContext: Context)(script: Script): Stream[EncodedDialog] = {
-    def encodeNode(node: Tree[Script.Step]) =
+    def encodeNode(node: Node) =
       if (node.value.owner == Клиент) Await.result(client.encode(node.value.action, clientContext), 1.second)
       else Await.result(operator.encode(node.value.action, operatorContext), 1.second)
 
     script.children.toStream.flatMap(dts(_, encodeNode))
   }
-
-  /*def run(client: BotIO, operator: BotIO)(script: Script): Future[String] = {
-
-  }*/
-
-  private type Node = Tree[Script.Step]
 
   def run(client: BotIO, operator: BotIO)(script: Script): Future[String] = {
     case class Ctx(client: Context, operator: Context)

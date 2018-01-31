@@ -5,14 +5,14 @@ import com.sagebear.bigrussianboss.Script.{Action, Subject}
 import com.sagebear.bigrussianboss.bot.BotIO._
 import com.sagebear.bigrussianboss.ner.NerMarkup
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * @author vadim
   * @since 30.01.2018
   */
 case class TestBot(role: Subject) extends BotIO {
-  override def encode(a: Action, context: Context): Future[EncodedUtterance] =
+  override def encode(a: Action, context: Context)(implicit ec: ExecutionContext): Future[EncodedUtterance] =
     a match {
       case Адрес => toUtterance(Set("где ты живешь?", "скажи свой адрес", "ты с каого района, епта?").choose.head, Адрес)
       case Телефон => toUtterance(Set("твой телефон?", "цифры телефона скажи, епта", "твоя мобила?").choose.head, Телефон)
@@ -42,7 +42,7 @@ case class TestBot(role: Subject) extends BotIO {
       case Глупости => Future(bio2utterance(Hello, wrap2tag(Set("слоны идут на север", "епта", "коза").choose.head)))
     }
 
-  private def toUtterance(str: String, action: Action): Future[EncodedUtterance] = Future {
+  private def toUtterance(str: String, action: Action)(implicit ec: ExecutionContext): Future[EncodedUtterance] = Future {
     EncodedUtterance(role, str, str.split(" ").map(v => (v, NerMarkup.Other.OtherT)), Set(action))
   }
 
@@ -60,5 +60,5 @@ case class TestBot(role: Subject) extends BotIO {
     Set(intent)
   )
 
-  override def decode(text: String): Future[(Action, Context)] = ???
+  override def decode(text: String)(implicit ec: ExecutionContext): Future[(Action, Context)] = ???
 }
