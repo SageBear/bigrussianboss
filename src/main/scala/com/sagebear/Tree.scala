@@ -9,6 +9,8 @@ import com.sagebear.Extensions._
 case class Tree[T](value: T, children: Seq[Tree[T]]) {
   type Node = Tree[T]
 
+  val isLeaf: Boolean = children.isEmpty
+
   //TODO: ordering
   def insert(node: Node): Node = {
     children.zipWithIndex.find { case (n, _) => n.value == node.value } match {
