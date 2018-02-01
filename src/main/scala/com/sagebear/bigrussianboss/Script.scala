@@ -1,14 +1,20 @@
 package com.sagebear.bigrussianboss
 
 import com.sagebear.Tree
+import com.sagebear.bigrussianboss.bot.SensorsAndActuators
+import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents.And
+
+import scala.concurrent.Future
 
 /**
   * @author vadim
   * @since 30.01.2018
   */
 case class Script(children: Seq[Tree[Script.Step]]) {
-  def insert(node: Tree[Script.Step]): Script = {
+  import Script._
+
+  def insert(node: Tree[Step]): Script = {
     children.zipWithIndex.find { case (n, _) => n.value == node.value } match {
       case None => new Script(children :+ node)
       case Some((ch, i)) =>
@@ -16,9 +22,33 @@ case class Script(children: Seq[Tree[Script.Step]]) {
         new Script(children.updated(i, newChildren))
     }
   }
+
+  def execute(client: SensorsAndActuators, operator: SensorsAndActuators): Future[String] = {
+    def step(alternatives: Seq[Node], client: SensorsAndActuators, operator: SensorsAndActuators, rollupCallback: => Future[String]): Future[String] =
+      if (alternatives.isEmpty) Future("")
+      else {
+        val node = alternatives.head
+        val (speaker, listener, prompt) = if (node.value.speaker == Клиент) (client, operator, ">>") else (operator, client, "::")
+        val communicate =
+          for(text <- speaker.act(node.value.action); newSpeaker <- listener.observe(text)(node.value.action)) yield (text, newSpeaker, speaker)
+
+        (for {
+          (text, nextSpeaker, nextListener) <- communicate
+          nextRollupCallback = if (alternatives.tail.nonEmpty) step(alternatives.tail, speaker, listener, rollupCallback) else rollupCallback
+          utterance <- step(node.children, nextSpeaker, nextListener, nextRollupCallback).map(text + "\n" + prompt + _)
+        } yield utterance).recoverWith {
+          case CanNotDoThis => rollupCallback
+          case DoNotUnderstand => rollupCallback
+        }
+      }
+
+    step(children, client, operator, Future.failed(CanNotDoThis))
+  }
 }
 
 object Script {
+  private type Node = Tree[Step]
+
   trait Subject {
     def приветствует: Step = Step(this, intent.Intents.Hello)
     def прощается: Step = Step(this, intent.Intents.Bye)
@@ -30,8 +60,8 @@ object Script {
   case object Клиент extends Subject
   case object Оператор extends Subject
 
-  case class Step(owner: Subject, action: Action) {
-    override def toString: String = s"$owner: $action"
+  case class Step(speaker: Subject, action: Action) {
+    override def toString: String = s"$speaker: $action"
   }
 
   trait Action {
