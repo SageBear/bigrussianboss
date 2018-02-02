@@ -8,6 +8,6 @@ lazy val root = (project in file(".")).
       version      := "0.1.0-SNAPSHOT"
     )),
     name := "BigRussianBoss",
-    libraryDependencies += "com.github.javafaker" % "javafaker" % "0.14",
+    libraryDependencies += "com.github.javafaker" % "javafaker" % "0.14" % Test,
     libraryDependencies += scalaTest % Test
   )

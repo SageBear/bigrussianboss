@@ -13,11 +13,11 @@ object Intents {
   case object Bye extends Action
   case object Глупости extends Action
 
-  case object Про_покупку_пива extends Action
-  case object Адрес extends Action
-  case object Телефон extends Action
+  case object Вопрос_про_покупку_пива extends Action
+  case object Вопрос_про_адрес extends Action
+  case object Вопрос_про_телефон extends Action
 
-  case object Свой_адрес extends Action
-  case object Свой_телефон extends Action
-  case object Где_купить_пиво extends Action
+  case object Информацию_про_свой_адрес extends Action
+  case object Информацию_про_свой_телефон extends Action
+  case object Информацию_где_купить_пиво extends Action
 }

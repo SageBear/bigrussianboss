@@ -66,27 +66,27 @@ object Extensions {
   }
 
   object CPMerge {
-    private trait Measure {
+    trait Measure {
       def t(threshold:Double, sizeOfA:Int, sizeOfB:Int):Int
       def min(threshold:Double, sizeOfA:Int):Int
       def max(threshold:Double, sizeOfA:Int):Int
     }
 
-    private object Cosine extends Measure {
+    object Cosine extends Measure {
       def t(threshold:Double, sizeOfFeaturesA:Int, sizeOfFeaturesB:Int): Int =
         Math.ceil(threshold * Math.sqrt(sizeOfFeaturesA * sizeOfFeaturesB)).toInt
       def max(threshold:Double, sizeOfFeaturesA:Int):Int = Math.floor(sizeOfFeaturesA/(threshold * threshold)).toInt
       def min(threshold:Double, sizeOfFeaturesA:Int):Int = Math.ceil(threshold * threshold * sizeOfFeaturesA).toInt
     }
 
-    private object Jaccard extends Measure {
+    object Jaccard extends Measure {
       def t(threshold:Double, sizeOfFeaturesA:Int, sizeOfFeaturesB:Int): Int =
         Math.ceil( (threshold * (sizeOfFeaturesA + sizeOfFeaturesB)) / (1 + threshold)).toInt
       def max(threshold:Double, sizeOfFeaturesA:Int): Int = Math.floor(sizeOfFeaturesA/threshold).toInt
       def min(threshold:Double, sizeOfFeaturesA:Int): Int = Math.ceil(threshold * sizeOfFeaturesA).toInt
     }
 
-    private object Dice extends Measure {
+    object Dice extends Measure {
       def t(threshold:Double, sizeOfFeaturesA:Int, sizeOfFeaturesB:Int):Int =
         Math.ceil( 0.5 *  threshold * (sizeOfFeaturesA + sizeOfFeaturesB) ).toInt
       def max(threshold:Double, sizeOfFeaturesA:Int): Int = Math.floor( ((2-threshold)/threshold) * sizeOfFeaturesA ).toInt

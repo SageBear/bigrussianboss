@@ -2,7 +2,7 @@ package com.sagebear.bigrussianboss.bot
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.intent.Intents._
 import com.sagebear.Extensions._
-import com.sagebear.bigrussianboss.bot.SensorsAndActuators.CanNotDoThis
+import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -10,19 +10,20 @@ import scala.concurrent.{ExecutionContext, Future}
   * @author vadim
   * @since 01.02.2018
   */
-class RuleBased(context: Map[String, String] = Map.empty) extends SensorsAndActuators {
+class RuleBased(private val context: Map[String, String] = Map.empty) extends SensorsAndActuators {
 
-  protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => Set[T]): Set[T] = Map[Script.Action, Set[T]](
-    Адрес -> subs(Set("где ты живешь?", "скажи свой адрес", "ты с каого района, епта?")),
-    Телефон -> subs(Set("твой телефон?", "цифры телефона скажи, епта", "твоя мобила?")),
-    Свой_адрес -> subs(Set("я живу на %s", "address")),
-    Свой_телефон -> subs(Set("%s моя мобила", "phone")),
-    Где_купить_пиво -> subs(Set("Иди в ближайший к %s ларек. а еще ответь на смску, я ее послал на %s", "address", "phone")),
-    Про_покупку_пива -> subs(Set("пивчан хочу!", "где мне попить пива?", "где найти пива?")),
-    Hello -> subs(Set("привет, епта", "здарова, отец", "чо как?")),
-    Bye -> subs(Set("бывай", "будь", "покеда, епта")),
-    Глупости -> subs(Set("слоны идут на север", "епта", "коза"))
-  ).getOrElse(action, Set.empty)
+  private def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = PartialFunction[Script.Action, T] {
+    case Вопрос_про_адрес => subs(Set("где ты живешь?", "скажи свой адрес", "ты с каого района, епта?"), Seq.empty)
+    case Вопрос_про_телефон => subs(Set("твой телефон?", "цифры телефона скажи, епта", "твоя мобила?"), Seq.empty)
+    case Информацию_про_свой_адрес => subs(Set("я живу на %s"), Seq("address"))
+    case Информацию_про_свой_телефон => subs(Set("%s моя мобила"), Seq("phone"))
+    case Информацию_где_купить_пиво => subs(Set("иди в ближайший к %s ларек. а еще ответь на смску, я ее послал на %s"), Seq("address", "phone"))
+    case Вопрос_про_покупку_пива => subs(Set("пивчан хочу!", "где мне попить пива?", "где найти пива?"), Seq.empty)
+    case Hello => subs(Set("здравствуй","здравствуйте","мое почтение","здарова","приветствую","привет", "доброго времени суток",
+      "как дела","хай","чо как","здаров"), Seq.empty)
+    case Bye => subs(Set("пока", "до свидания", "прощай", "бб", "бай","бывай","до новых встреч","покедова","будь"), Seq.empty)
+    case Глупости => subs(Set("слоны идут на север", "епта", "коза"), Seq.empty)
+  }.applyOrElse(action, (_: Script.Action) => subs(Set.empty, Seq.empty))
 
   override def observe(text: String)(a: Script.Action)(implicit ec: ExecutionContext): Future[RuleBased] =
     a match {
@@ -33,9 +34,15 @@ class RuleBased(context: Map[String, String] = Map.empty) extends SensorsAndActu
         } yield new RuleBased(b1.context ++ b2.context)
 
       case _ =>
-        def subs(texts: Set[String], v: Seq[String]): Set[String] = texts.map(_.replace("%s","(.+)"))
-        //reflex(a, subs)
-        ???
+        val txt = text.toLowerCase
+
+        def subs(texts: Set[String], v: Seq[String]): Option[Map[String, String]] = {
+          val patterns = texts.map(_.replace("%s","(.+)").r(v: _*))
+          patterns.map(_.findFirstMatchIn(txt)).collectFirst {
+            case Some(res) => v.map(arg => arg -> res.group(arg)).toMap
+          }
+        }
+        reflex(a, subs).fold[Future[RuleBased]](Future.failed(DoNotUnderstand)) { args => Future(new RuleBased(context ++ args)) }
     }
 
   override def act(a: Script.Action)(implicit ec: ExecutionContext): Future[String] = a match {
@@ -46,7 +53,15 @@ class RuleBased(context: Map[String, String] = Map.empty) extends SensorsAndActu
       } yield s"$q1u и $q2u"
 
     case _ =>
-      def subs(texts: Set[String], args: Seq[String]): Set[String] = if (args.forall(context.contains)) texts.map(_.format(args)) else Set.empty
+      def subs(texts: Set[String], args: Seq[String]): Set[String] = if (args.forall(context.contains)) {
+        val values = args.map(context)
+        texts.map(_.format(values: _*))
+      } else Set.empty
       reflex(a, subs).choose.fold[Future[String]](Future.failed(CanNotDoThis))(Future(_))
   }
+}
+
+object RuleBased {
+  def client(address: String, phone: String): RuleBased = new RuleBased(Map("address" -> address, "phone" -> phone))
+  def operator: RuleBased = new RuleBased(Map.empty)
 }
