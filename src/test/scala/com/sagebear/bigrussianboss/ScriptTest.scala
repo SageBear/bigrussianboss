@@ -46,8 +46,13 @@ class ScriptTest extends FlatSpec {
   private val clientPhone = faker.phoneNumber().cellPhone()
   private val client = RuleBased.client(clientAddress, clientPhone)
   private val operator = RuleBased.operator
+  private val operatorH = new Cli
 
-  it should "work" in {
+  it should "work for robots" in {
     println(Await.result(script.execute(client, operator), 1.hour))
+  }
+
+  it should "work for robot and human" in {
+    println(Await.result(script.execute(client, operatorH), 1.hour))
   }
 }

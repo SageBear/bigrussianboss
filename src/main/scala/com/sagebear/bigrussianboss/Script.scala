@@ -36,7 +36,7 @@ class Script(children: Seq[Tree[Script.Step]]) {
           for {
             text <- speaker.act(node.value.action)
             newListener <- listener.observe(text)(node.value.action)
-            (newClient, newOperator) = if (node.value.speaker == Клиент) (newListener, operator) else (client, newListener)
+            (newClient, newOperator) = if (node.value.speaker == Клиент) (client, newListener) else (newListener, operator)
           } yield (text, newClient, newOperator)
 
         (for {
