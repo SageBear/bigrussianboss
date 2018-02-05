@@ -12,6 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Random
 
 class ScriptTest extends FlatSpec {
   private val script = примеры(
@@ -41,18 +42,24 @@ class ScriptTest extends FlatSpec {
     )
   )
 
+  private implicit val rnd: Random = new Random(0)
   private val faker = new Faker(new Locale("ru"))
   private val clientAddress = faker.address().streetAddress()
   private val clientPhone = faker.phoneNumber().cellPhone()
-  private val client = RuleBased.client(clientAddress, clientPhone)
-  private val operator = RuleBased.operator
+  private val client = RuleBased.client(clientAddress, clientPhone).get
+  private val operator = RuleBased.operator.get
   private val operatorH = new Cli
 
   it should "work for robots" in {
-    println(Await.result(script.execute(client, operator), 1.hour))
-  }
-
-  it should "work for robot and human" in {
-    println(Await.result(script.execute(client, operatorH), 1.hour))
+    assert(Await.result(script.execute(client, operator), 1.hour) ===
+      s""">> чо как
+         |:: чо как
+         |>> где найти пива?
+         |:: скажи свой адрес
+         |>> я живу на ${clientAddress.toLowerCase}
+         |:: иди в ближайший к ${clientAddress.toLowerCase} ларек
+         |:: прощай
+         |>> прощай
+         |""".stripMargin)
   }
 }

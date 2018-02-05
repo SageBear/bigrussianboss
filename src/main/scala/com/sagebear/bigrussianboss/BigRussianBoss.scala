@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class Prog extends App {
+class BigRussianBoss extends App {
   private val script = примеры(
    Пример(
       Клиент приветствует,
@@ -38,7 +38,7 @@ class Prog extends App {
   )
 
   private val client = new Cli//RuleBased.client(clientAddress, clientPhone)
-  private val operator = RuleBased.operator
+  private val operator = RuleBased.operator.get
 
   println(Await.result(script.execute(client, operator), 1.hour))
 }

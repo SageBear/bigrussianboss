@@ -1,16 +1,18 @@
 package com.sagebear.bigrussianboss.bot
-import com.sagebear.bigrussianboss.Script
-import com.sagebear.bigrussianboss.intent.Intents._
 import com.sagebear.Extensions._
+import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
+import com.sagebear.bigrussianboss.intent.Intents._
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Random, Try}
 
 /**
   * @author vadim
   * @since 01.02.2018
   */
-class RuleBased(private val context: Map[String, String] = Map.empty) extends SensorsAndActuators {
+class RuleBased(private val context: Map[String, String], conf: Config, rnd: Random) extends SensorsAndActuators {
 
   private def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = PartialFunction[Script.Action, T] {
     case Вопрос_про_адрес => subs(Set("где ты живешь?", "скажи свой адрес", "ты с каого района, епта?"), Seq.empty)
@@ -31,7 +33,7 @@ class RuleBased(private val context: Map[String, String] = Map.empty) extends Se
         for {
           b1 <- observe(text)(q1)
           b2 <- observe(text)(q2)
-        } yield new RuleBased(b1.context ++ b2.context)
+        } yield new RuleBased(b1.context ++ b2.context, conf, rnd)
 
       case _ =>
         val txt = text.toLowerCase
@@ -42,7 +44,7 @@ class RuleBased(private val context: Map[String, String] = Map.empty) extends Se
             case Some(res) => v.map(arg => arg -> res.group(arg)).toMap
           }
         }
-        reflex(a, subs).fold[Future[RuleBased]](Future.failed(DoNotUnderstand)) { args => Future(new RuleBased(context ++ args)) }
+        reflex(a, subs).fold[Future[RuleBased]](Future.failed(DoNotUnderstand)) { args => Future(new RuleBased(context ++ args, conf, rnd)) }
     }
 
   override def act(a: Script.Action)(implicit ec: ExecutionContext): Future[String] = a match {
@@ -57,11 +59,12 @@ class RuleBased(private val context: Map[String, String] = Map.empty) extends Se
         val values = args.map(context)
         texts.map(_.format(values: _*))
       } else Set.empty
-      reflex(a, subs).choose.fold[Future[String]](Future.failed(CanNotDoThis))(Future(_))
+      reflex(a, subs).choose(rnd).fold[Future[String]](Future.failed(CanNotDoThis))(s => Future(s.toLowerCase))
   }
 }
 
 object RuleBased {
-  def client(address: String, phone: String): RuleBased = new RuleBased(Map("address" -> address, "phone" -> phone))
-  def operator: RuleBased = new RuleBased(Map.empty)
+  def client(address: String, phone: String)(implicit rnd: Random = Random): Try[RuleBased] = Try(
+    new RuleBased(Map("address" -> address, "phone" -> phone), ConfigFactory.load(), rnd))
+  def operator(implicit rnd: Random = Random): Try[RuleBased] = Try(new RuleBased(Map.empty, ConfigFactory.load(), rnd))
 }

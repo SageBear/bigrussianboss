@@ -1,8 +1,10 @@
 package com.sagebear
 
+import scala.util.Random
+
 object Extensions {
   implicit class SetExtension[T](set: Set[T]) {
-    def choose: Option[T] = scala.util.Random.shuffle(set).headOption
+    def choose(rnd: Random): Option[T] = rnd.shuffle(set).headOption
   }
 
   implicit class StringExtensions(str: String) {
