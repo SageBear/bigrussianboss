@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class BigRussianBoss extends App {
+object BigRussianBoss extends App {
   private val script = примеры(
    Пример(
       Клиент приветствует,
