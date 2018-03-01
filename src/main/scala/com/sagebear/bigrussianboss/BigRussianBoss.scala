@@ -1,7 +1,7 @@
 package com.sagebear.bigrussianboss
 
 import com.sagebear.bigrussianboss.Script._
-import com.sagebear.bigrussianboss.bot.{Cli, RuleBased}
+import com.sagebear.bigrussianboss.bot.{Cli, RuleBased, ReturnRuleBased}
 import com.sagebear.bigrussianboss.intent.Intents._
 
 import scala.concurrent.Await
@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class BigRussianBoss extends App {
+object BigRussianBoss extends App {
   private val script = примеры(
    Пример(
       Клиент приветствует,
@@ -37,8 +37,62 @@ class BigRussianBoss extends App {
     )
   )
 
-  private val client = new Cli//RuleBased.client(clientAddress, clientPhone)
-  private val operator = RuleBased.operator.get
+  private val returnScript = примеры(
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Информацию_про_цель_визита,
+      Оператор спрашивает Вопрос_про_место_покупки_товара,
+      Клиент говорит Информацию_место_покупки_магазин,
+      Оператор спрашивает Вопрос_устраивает_ли_качество_товара,
+      Клиент говорит Нет,
+      Оператор спрашивает Вопрос_является_ли_технически_сложным_товаром,
+      Клиент говорит Нет,
+      Оператор говорит Информацию_о_возврате_технически_сложного_товара,
+      Клиент прощается,
+      Оператор прощается,
+    ),
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Информацию_про_цель_визита,
+      Оператор спрашивает Вопрос_про_место_покупки_товара,
+      Клиент говорит Информацию_место_покупки_магазин,
+      Оператор спрашивает Вопрос_устраивает_ли_качество_товара,
+      Клиент говорит Нет,
+      Оператор спрашивает Вопрос_является_ли_технически_сложным_товаром,
+      Клиент говорит Нет,
+      Оператор говорит Информацию_о_возврате_технически_не_сложного_товара,
+      Клиент прощается,
+      Оператор прощается,
+    ),
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Информацию_про_цель_визита,
+      Оператор спрашивает Вопрос_про_место_покупки_товара,
+      Клиент говорит Информацию_место_покупки_магазин,
+      Оператор спрашивает Вопрос_устраивает_ли_качество_товара,
+      Клиент говорит Да,
+      Оператор говорит Информацию_о_возврате_товара_когда_устраивает_качество,
+      Клиент прощается,
+      Оператор прощается,
+    ),
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Информацию_про_цель_визита,
+      Оператор спрашивает Вопрос_про_место_покупки_товара,
+      Клиент говорит Информацию_место_покупки_онлайн,
+      Оператор говорит Информацию_место_покупки_онлайн,
+      Клиент прощается,
+      Оператор прощается,
+    )
+  )
 
-  println(Await.result(script.execute(client, operator), 1.hour))
+
+  private val client = ReturnRuleBased.client.get
+  private val operator = ReturnRuleBased.operator.get
+
+  println(Await.result(returnScript.execute(client, operator), 1.hour))
 }
