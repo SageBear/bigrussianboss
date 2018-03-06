@@ -1,7 +1,10 @@
 package com.sagebear.bigrussianboss
 
+import java.util.Locale
+
+import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
-import com.sagebear.bigrussianboss.bot.{Cli, RuleBased, ReturnRuleBased}
+import com.sagebear.bigrussianboss.bot.{BeerBot, LegalBot, ObedientBot}
 import com.sagebear.bigrussianboss.intent.Intents._
 
 import scala.concurrent.Await
@@ -10,7 +13,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object BigRussianBoss extends App {
-  private val script = примеры(
+  private val beerScript = примеры(
    Пример(
       Клиент приветствует,
       Оператор приветствует,
@@ -37,17 +40,17 @@ object BigRussianBoss extends App {
     )
   )
 
-  private val returnScript = примеры(
+  private val legalScript = примеры(
     Пример(
       Клиент приветствует,
       Оператор приветствует,
-      Клиент говорит Информацию_про_цель_визита,
-      Оператор спрашивает Вопрос_про_место_покупки_товара,
-      Клиент говорит Информацию_место_покупки_магазин,
-      Оператор спрашивает Вопрос_устраивает_ли_качество_товара,
-      Клиент говорит Нет,
-      Оператор спрашивает Вопрос_является_ли_технически_сложным_товаром,
-      Клиент говорит Нет,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_в_магазине,
+      Оператор спрашивает Устраивает_ли_качество_товара,
+      Клиент говорит Не_устраивает,
+      Оператор спрашивает Является_ли_товар_технически_сложным,
+      Клиент говорит Является,
       Оператор говорит Информацию_о_возврате_технически_сложного_товара,
       Клиент прощается,
       Оператор прощается,
@@ -55,13 +58,13 @@ object BigRussianBoss extends App {
     Пример(
       Клиент приветствует,
       Оператор приветствует,
-      Клиент говорит Информацию_про_цель_визита,
-      Оператор спрашивает Вопрос_про_место_покупки_товара,
-      Клиент говорит Информацию_место_покупки_магазин,
-      Оператор спрашивает Вопрос_устраивает_ли_качество_товара,
-      Клиент говорит Нет,
-      Оператор спрашивает Вопрос_является_ли_технически_сложным_товаром,
-      Клиент говорит Нет,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_в_магазине,
+      Оператор спрашивает Устраивает_ли_качество_товара,
+      Клиент говорит Не_устраивает,
+      Оператор спрашивает Является_ли_товар_технически_сложным,
+      Клиент говорит Не_является,
       Оператор говорит Информацию_о_возврате_технически_не_сложного_товара,
       Клиент прощается,
       Оператор прощается,
@@ -69,11 +72,11 @@ object BigRussianBoss extends App {
     Пример(
       Клиент приветствует,
       Оператор приветствует,
-      Клиент говорит Информацию_про_цель_визита,
-      Оператор спрашивает Вопрос_про_место_покупки_товара,
-      Клиент говорит Информацию_место_покупки_магазин,
-      Оператор спрашивает Вопрос_устраивает_ли_качество_товара,
-      Клиент говорит Да,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_в_магазине,
+      Оператор спрашивает Устраивает_ли_качество_товара,
+      Клиент говорит Устраивает,
       Оператор говорит Информацию_о_возврате_товара_когда_устраивает_качество,
       Клиент прощается,
       Оператор прощается,
@@ -81,18 +84,33 @@ object BigRussianBoss extends App {
     Пример(
       Клиент приветствует,
       Оператор приветствует,
-      Клиент говорит Информацию_про_цель_визита,
-      Оператор спрашивает Вопрос_про_место_покупки_товара,
-      Клиент говорит Информацию_место_покупки_онлайн,
-      Оператор говорит Информацию_место_покупки_онлайн,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_онлайн,
+      Оператор говорит Информацию_о_возврате_товара_при_покупке_онлайн,
       Клиент прощается,
       Оператор прощается,
     )
   )
 
+  private val faker = new Faker(new Locale("ru"))
 
-  private val client = ReturnRuleBased.client.get
-  private val operator = ReturnRuleBased.operator.get
+  private val clientAddress = faker.address().streetAddress()
+  private val clientPhone = faker.phoneNumber().cellPhone()
+  private val beerClient = BeerBot.client(clientAddress, clientPhone).get
+  private val beerOperator = BeerBot.operator.get
+  private val clientRegister = ObedientBot.client("чО КАК", "где мНе поПитЬ пИвА?", "ПроЩаЙ").get
 
-  println(Await.result(returnScript.execute(client, operator), 1.hour))
+  private val client = LegalBot.client.get
+  private val operator = LegalBot.operator.get
+  private val clientO = ObedientBot.client(
+    "Здравствуйте",
+    "Как вернуть товар из вашего магазина?",
+    "В магазине",
+    "Совсем не устраивает",
+    "Да",
+    "До! свидания").get
+
+  //  println(Await.result(beerScript.execute(beerClient, beerClient), 1.hour))
+  println(Await.result(legalScript.execute(clientO, operator), 1.hour))
 }

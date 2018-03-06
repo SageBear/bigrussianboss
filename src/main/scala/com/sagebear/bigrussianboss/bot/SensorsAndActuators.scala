@@ -16,6 +16,4 @@ trait SensorsAndActuators {
 object SensorsAndActuators {
   case object CanNotDoThis extends RuntimeException with NoStackTrace
   case object DoNotUnderstand extends RuntimeException with NoStackTrace
-
-
 }

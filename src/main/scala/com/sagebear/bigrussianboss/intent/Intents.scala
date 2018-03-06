@@ -25,15 +25,28 @@ object Intents {
   case object Да extends Action
   case object Нет extends Action
 
-  case object Информацию_про_цель_визита extends Action
-  case object Информацию_место_покупки_магазин extends Action
+  case object Цель_своего_визита extends Action
+
+  case object Место_покупки_товара extends Action
+
+  case object Купил_в_магазине extends Action
+
+  case object Купил_онлайн extends Action
+
+  case object Устраивает_ли_качество_товара extends Action
+
+  case object Устраивает extends Action
+
+  case object Не_устраивает extends Action
+
+  case object Является_ли_товар_технически_сложным extends Action
+
+  case object Является extends Action
+
+  case object Не_является extends Action
+
   case object Информацию_о_возврате_технически_сложного_товара extends Action
   case object Информацию_о_возврате_технически_не_сложного_товара extends Action
   case object Информацию_о_возврате_товара_когда_устраивает_качество extends Action
-  case object Информацию_место_покупки_онлайн extends Action
   case object Информацию_о_возврате_товара_при_покупке_онлайн extends Action
-
-  case object Вопрос_про_место_покупки_товара extends Action
-  case object Вопрос_устраивает_ли_качество_товара extends Action
-  case object Вопрос_является_ли_технически_сложным_товаром extends Action
 }
