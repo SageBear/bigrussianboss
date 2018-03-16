@@ -3,7 +3,6 @@ import com.sagebear.Extensions._
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -12,10 +11,12 @@ import scala.util.Random
   * @author vadim
   * @since 01.02.2018
   */
-abstract class RuleBased(private val context: Map[String, String], conf: Config, rnd: Random) extends SensorsAndActuators {
+trait RuleBased extends SensorsAndActuators {
+  protected def context: Map[String, String]
+
   protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T
 
-  protected def instance(context: Map[String, String], conf: Config, rnd: Random): RuleBased
+  protected def instance(context: Map[String, String]): RuleBased
 
   override def observe(text: String)(a: Script.Action)(implicit ec: ExecutionContext): Future[RuleBased] = {
     a match {
@@ -23,7 +24,7 @@ abstract class RuleBased(private val context: Map[String, String], conf: Config,
         for {
           b1 <- observe(text)(q1)
           b2 <- observe(text)(q2)
-        } yield instance(b1.context ++ b2.context, conf, rnd)
+        } yield this.instance(context)
 
       case _ =>
         val txt = text.toLowerCase
@@ -36,12 +37,12 @@ abstract class RuleBased(private val context: Map[String, String], conf: Config,
         }
 
         reflex(a, subs).fold[Future[RuleBased]](Future.failed(DoNotUnderstand)) {
-          args => Future(instance(context ++ args, conf, rnd))
+          args => Future(instance(context ++ args))
         }
     }
   }
 
-  override def act(a: Script.Action)(implicit ec: ExecutionContext): Future[String] = a match {
+  override def act(a: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[String] = a match {
     case And(q1, q2) =>
       for {
         q1u <- act(q1)

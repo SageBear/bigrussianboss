@@ -11,6 +11,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Random
 
 class BigRussianBoss extends App {
   private val beerScript = примеры(
@@ -92,6 +93,8 @@ class BigRussianBoss extends App {
       Оператор прощается,
     )
   )
+
+  private implicit val rnd: Random = new Random(0)
 
   private val faker = new Faker(new Locale("ru"))
 

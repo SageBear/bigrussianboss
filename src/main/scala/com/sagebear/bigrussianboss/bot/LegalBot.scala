@@ -2,11 +2,10 @@ package com.sagebear.bigrussianboss.bot
 
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.util.{Random, Try}
 
-class LegalBot(context: Map[String, String], conf: Config, rnd: Random) extends RuleBased(context, conf, rnd) {
+class LegalBot(val context: Map[String, String]) extends RuleBased {
   override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = PartialFunction[Script.Action, T] {
     case Hello => subs(Set("Здравствуйте", "Добрый день", "Привет", "Доброго времени суток"), Seq.empty)
     case Bye => subs(Set(
@@ -96,11 +95,11 @@ class LegalBot(context: Map[String, String], conf: Config, rnd: Random) extends 
         "Найдите номар заказа и с ним приходите в магазин для совершения обмена"), Seq.empty)
   }.applyOrElse(action, (_: Script.Action) => subs(Set.empty, Seq.empty))
 
-  override protected def instance(context: Map[String, String], conf: Config, rnd: Random): RuleBased =
-    new LegalBot(context, conf, rnd)
+  override protected def instance(context: Map[String, String]): RuleBased = new LegalBot(context)
 }
 
 object LegalBot {
-  def client(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty, ConfigFactory.load(), rnd))
-  def operator(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty, ConfigFactory.load(), rnd))
+  def client(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty))
+
+  def operator(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty))
 }

@@ -2,11 +2,10 @@ package com.sagebear.bigrussianboss.bot
 
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.util.{Random, Try}
 
-class BeerBot(context: Map[String, String], conf: Config, rnd: Random) extends RuleBased(context, conf, rnd) {
+class BeerBot(val context: Map[String, String]) extends RuleBased {
   override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = PartialFunction[Script.Action, T] {
     case Вопрос_про_адрес => subs(Set("где ты живешь?", "скажи свой адрес", "ты с каого района, епта?"), Seq.empty)
     case Вопрос_про_телефон => subs(Set("твой телефон?", "цифры телефона скажи, епта", "твоя мобила?"), Seq.empty)
@@ -20,14 +19,14 @@ class BeerBot(context: Map[String, String], conf: Config, rnd: Random) extends R
     case Глупости => subs(Set("слоны идут на север", "епта", "коза"), Seq.empty)
   }.applyOrElse(action, (_: Script.Action) => subs(Set.empty, Seq.empty))
 
-  override protected def instance(context: Map[String, String], conf: Config, rnd: Random): RuleBased = {
-    new BeerBot(context, conf, rnd)
+  override protected def instance(context: Map[String, String]): RuleBased = {
+    new BeerBot(context)
   }
 }
 
 object BeerBot {
   def client(address: String, phone: String)(implicit rnd: Random = Random): Try[BeerBot] = Try(
-    new BeerBot(Map("address" -> address, "phone" -> phone), ConfigFactory.load(), rnd))
+    new BeerBot(Map("address" -> address, "phone" -> phone)))
 
-  def operator(implicit rnd: Random = Random): Try[BeerBot] = Try(new BeerBot(Map.empty, ConfigFactory.load(), rnd))
+  def operator(implicit rnd: Random = Random): Try[BeerBot] = Try(new BeerBot(Map.empty))
 }

@@ -1,11 +1,7 @@
 package com.sagebear.bigrussianboss
 
-import java.util.Locale
-
-import com.github.javafaker.Faker
-import com.sagebear.bigrussianboss.bot.ObedientBot
 import com.sagebear.bigrussianboss.Script._
-import com.sagebear.bigrussianboss.bot._
+import com.sagebear.bigrussianboss.bot.{ObedientBot, _}
 import com.sagebear.bigrussianboss.intent.Intents._
 import org.scalatest.FlatSpec
 
@@ -13,6 +9,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Random
 
 
 class BeerBotTestAlternative extends FlatSpec {
@@ -47,6 +44,8 @@ class BeerBotTestAlternative extends FlatSpec {
       Клиент прощается
     )
   )
+
+  private implicit val rnd: Random = new Random(0)
 
   private val operator = BeerBot.operator.get
   private val clientAlternative = ObedientBot.client("чо как", "где мне попить пива?", "прощай").get
