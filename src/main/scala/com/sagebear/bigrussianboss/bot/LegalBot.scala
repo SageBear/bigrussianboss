@@ -96,13 +96,11 @@ class LegalBot(context: Map[String, String], conf: Config, rnd: Random) extends 
         "Найдите номар заказа и с ним приходите в магазин для совершения обмена"), Seq.empty)
   }.applyOrElse(action, (_: Script.Action) => subs(Set.empty, Seq.empty))
 
-  override protected def instance(context: Map[String, String], conf: Config, rnd: Random): RuleBased = {
+  override protected def instance(context: Map[String, String], conf: Config, rnd: Random): RuleBased =
     new LegalBot(context, conf, rnd)
-  }
 }
 
 object LegalBot {
   def client(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty, ConfigFactory.load(), rnd))
-
   def operator(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty, ConfigFactory.load(), rnd))
 }
