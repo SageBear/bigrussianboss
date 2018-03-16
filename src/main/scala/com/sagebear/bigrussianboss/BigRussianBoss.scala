@@ -1,16 +1,20 @@
 package com.sagebear.bigrussianboss
 
+import java.util.Locale
+
+import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
-import com.sagebear.bigrussianboss.bot.{Cli, RuleBased}
+import com.sagebear.bigrussianboss.bot.{BeerBot, LegalBot}
 import com.sagebear.bigrussianboss.intent.Intents._
 
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.Random
 
 class BigRussianBoss extends App {
-  private val script = примеры(
+  private val beerScript = примеры(
    Пример(
       Клиент приветствует,
       Оператор приветствует,
@@ -37,8 +41,70 @@ class BigRussianBoss extends App {
     )
   )
 
-  private val client = new Cli//RuleBased.client(clientAddress, clientPhone)
-  private val operator = RuleBased.operator.get
+  private val legalScript = примеры(
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_в_магазине,
+      Оператор спрашивает Устраивает_ли_качество_товара,
+      Клиент говорит Не_устраивает,
+      Оператор спрашивает Является_ли_товар_технически_сложным,
+      Клиент говорит Является,
+      Оператор говорит Информацию_о_возврате_технически_сложного_товара,
+      Клиент прощается,
+      Оператор прощается,
+    ),
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_в_магазине,
+      Оператор спрашивает Устраивает_ли_качество_товара,
+      Клиент говорит Не_устраивает,
+      Оператор спрашивает Является_ли_товар_технически_сложным,
+      Клиент говорит Не_является,
+      Оператор говорит Информацию_о_возврате_технически_не_сложного_товара,
+      Клиент прощается,
+      Оператор прощается,
+    ),
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_в_магазине,
+      Оператор спрашивает Устраивает_ли_качество_товара,
+      Клиент говорит Устраивает,
+      Оператор говорит Информацию_о_возврате_товара_когда_устраивает_качество,
+      Клиент прощается,
+      Оператор прощается,
+    ),
+    Пример(
+      Клиент приветствует,
+      Оператор приветствует,
+      Клиент говорит Цель_своего_визита,
+      Оператор спрашивает Место_покупки_товара,
+      Клиент говорит Купил_онлайн,
+      Оператор говорит Информацию_о_возврате_товара_при_покупке_онлайн,
+      Клиент прощается,
+      Оператор прощается,
+    )
+  )
 
-  println(Await.result(script.execute(client, operator), 1.hour))
+  private implicit val rnd: Random = new Random(0)
+
+  private val faker = new Faker(new Locale("ru"))
+
+  private val clientAddress = faker.address().streetAddress()
+  private val clientPhone = faker.phoneNumber().cellPhone()
+  private val beerClient = BeerBot.client(clientAddress, clientPhone).get
+  private val beerOperator = BeerBot.operator.get
+
+  private val client = LegalBot.client.get
+  private val operator = LegalBot.operator.get
+
+  println(Await.result(beerScript.execute(beerClient, beerClient), 1.hour))
 }

@@ -6,6 +6,7 @@ import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotU
 import com.sagebear.bigrussianboss.intent.Intents.And
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Random
 
 /**
   * @author vadim
@@ -23,7 +24,7 @@ class Script(children: Seq[Tree[Script.Step]]) {
     }
   }
 
-  def execute(client: SensorsAndActuators, operator: SensorsAndActuators)(implicit ec: ExecutionContext): Future[String] = {
+  def execute(client: SensorsAndActuators, operator: SensorsAndActuators)(implicit ec: ExecutionContext, rnd: Random): Future[String] = {
     def step(alternatives: Seq[Node],
              client: SensorsAndActuators,
              operator: SensorsAndActuators,
