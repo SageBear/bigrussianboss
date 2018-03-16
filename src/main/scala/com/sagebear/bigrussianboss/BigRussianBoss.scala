@@ -94,6 +94,7 @@ class BigRussianBoss extends App {
     )
   )
 
+
   private implicit val rnd: Random = new Random(0)
 
   private val faker = new Faker(new Locale("ru"))
