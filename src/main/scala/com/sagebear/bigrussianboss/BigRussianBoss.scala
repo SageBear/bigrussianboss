@@ -4,7 +4,7 @@ import java.util.Locale
 
 import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
-import com.sagebear.bigrussianboss.bot.{BeerBot, LegalBot, ObedientBot}
+import com.sagebear.bigrussianboss.bot.{BeerBot, LegalBot}
 import com.sagebear.bigrussianboss.intent.Intents._
 
 import scala.concurrent.Await
@@ -99,18 +99,9 @@ object BigRussianBoss extends App {
   private val clientPhone = faker.phoneNumber().cellPhone()
   private val beerClient = BeerBot.client(clientAddress, clientPhone).get
   private val beerOperator = BeerBot.operator.get
-  private val clientRegister = ObedientBot.client("чО КАК", "где мНе поПитЬ пИвА?", "ПроЩаЙ").get
 
   private val client = LegalBot.client.get
   private val operator = LegalBot.operator.get
-  private val clientO = ObedientBot.client(
-    "Здравствуйте",
-    "Как вернуть товар из вашего магазина?",
-    "В магазине",
-    "Совсем не устраивает",
-    "Да",
-    "До! свидания").get
 
-  //  println(Await.result(beerScript.execute(beerClient, beerClient), 1.hour))
-  println(Await.result(legalScript.execute(clientO, operator), 1.hour))
+  println(Await.result(beerScript.execute(beerClient, beerClient), 1.hour))
 }

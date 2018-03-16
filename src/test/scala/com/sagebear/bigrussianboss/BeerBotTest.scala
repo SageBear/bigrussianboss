@@ -42,38 +42,6 @@ class BeerBotTest extends FlatSpec {
     )
   )
 
-  private val script_alternativeFirst = примеры(
-    Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент спрашивает Вопрос_про_покупку_пива,
-      Оператор прощается,
-      Клиент прощается
-    ),
-    Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент прощается,
-      Оператор прощается,
-    ),
-  )
-
-  private val script_alternativeSecond = примеры(
-    Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент прощается,
-      Оператор прощается,
-    ),
-    Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент спрашивает Вопрос_про_покупку_пива,
-      Оператор прощается,
-      Клиент прощается
-    )
-  )
-
   private val script_Simple = примеры(
     Пример(
       Клиент приветствует,
@@ -93,11 +61,8 @@ class BeerBotTest extends FlatSpec {
   private val client = BeerBot.client(clientAddress, clientPhone).get
   private val operator = BeerBot.operator.get
 
-  private val clientAlternative = ObedientBot.client("чо как", "где мне попить пива?", "прощай").get
   private val clientUnknown = ObedientBot.client("чо как", "где мне попить пива?", "Гав гав").get
   private val clientRegister = ObedientBot.client("чО КАК", "где мНе поПитЬ пИвА?", "ПроЩаЙ").get
-
-  private val cli = new Cli
 
   it should "work for robots" in {
     assert(Await.result(script_forRobots.execute(client, operator), 1.hour) ===
@@ -112,31 +77,11 @@ class BeerBotTest extends FlatSpec {
          |""".stripMargin)
   }
 
-  it should "bot should understand alternative (in first Пример) chosen from cli" in {
-    assert(Await.result(script_alternativeFirst.execute(clientAlternative, operator), 1.hour) ===
-      s""">> чо как
-         |:: чо как
-         |>> где мне попить пива?
-         |:: прощай
-         |>> прощай
-         |""".stripMargin)
-  }
-
-  it should "bot should understand alternative (in second Пример) chosen from cli" in {
-    assert(Await.result(script_alternativeSecond.execute(clientAlternative, operator), 1.hour) ===
-      s""">> чо как
-         |:: чо как
-         |>> где мне попить пива?
-         |:: прощай
-         |>> прощай
-         |""".stripMargin)
-  }
-
-  it should "bot shouldn't understand unknown" in {
+  it should "fail on unknown words" in {
     assertThrows[RuntimeException](Await.result(script_Simple.execute(clientUnknown, operator), 1.hour))
   }
 
-  it should "bot should ignore words register" in {
+  it should "ignore words register" in {
     assert(Await.result(script_Simple.execute(clientRegister, operator), 1.hour) ===
       s""">> чО КАК
          |:: чо как
