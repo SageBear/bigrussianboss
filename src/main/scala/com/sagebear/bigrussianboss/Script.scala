@@ -74,6 +74,25 @@ object Script {
   trait Action {
     def и(q: Action): Action = if (q.hashCode() > this.hashCode()) And(q, this) else And(this, q)
   }
+  class NamedAction(name: String) extends Action {
+    override def toString: String = name
+  }
+
+  object ConfigAction {
+    private var intentsTable: Map[String, Action] = Map.empty
+
+    def apply(name: String): Action = intentsTable.get(name) match {
+      case Some(action) => action
+      case None => {
+        val action = new NamedAction(name)
+        intentsTable += (name -> action)
+        action
+      }
+    }
+  }
+  implicit def strToAction(name: String): Action = {
+    ConfigAction(name)
+  }
 
   case class Пример(items: Script.Step*)
   def примеры(items: Пример*): Script = {

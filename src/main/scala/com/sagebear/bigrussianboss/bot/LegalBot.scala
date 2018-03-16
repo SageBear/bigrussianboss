@@ -1,101 +1,44 @@
 package com.sagebear.bigrussianboss.bot
 
+import java.util
+
+import scala.collection.JavaConversions._
+
 import com.sagebear.bigrussianboss.Script
+import com.sagebear.bigrussianboss.Script.{Action, ConfigAction}
 import com.sagebear.bigrussianboss.intent.Intents._
+import com.typesafe.config.ConfigFactory
 
 import scala.util.{Random, Try}
 
-class LegalBot(val context: Map[String, String]) extends RuleBased {
-  override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = PartialFunction[Script.Action, T] {
-    case Hello => subs(Set("Здравствуйте", "Добрый день", "Привет", "Доброго времени суток"), Seq.empty)
-    case Bye => subs(Set(
-      "Всего доброго, до свидания",
-      "До свидания",
-      "Пока"), Seq.empty)
+class LegalBot(val context: Map[String, String], private var intents: Map[Action, Set[String]]) extends RuleBased {
+  def this(context: Map[String, String]) {
+    this(context, Map.empty)
 
-    case Нет => subs(Set("Нет", "Ни в коем случае", "Неа"), Seq.empty)
-    case Да => subs(Set("Да", "Конечно", "Так точно", "А как же"), Seq.empty)
+    intents += (Bye -> Set.empty[String])
 
-    case Цель_своего_визита => subs(
-      Set("Недавно у вас покупал товар, и меня он не устраивает как его вернуть?",
-        "На днях купил товар, и хочу вернуть?",
-        "Приобрел у вас вещь, подскажите как ее вернуть?",
-        "Как вернуть товар из вашего магазина?",
-        "Какова процедура возврата товара?",
-        "Где можно вернуть товар?",
-        "Вчера купил у вас вещь и хотел бы вернуть, как это сделать?"), Seq.empty)
+    val config = ConfigFactory.load("LegalBot")
+    for (items <- config.getList("intents").unwrapped().toArray()) {
+      val map = items match {
+        case map: java.util.HashMap[String, Any] => map
+      }
+      val action = map.get("intent") match {
+        case name: String => ConfigAction(name)
+      }
+      if (!intents.contains(action)) {
+        map.get("templates") match {
+          case list: java.util.ArrayList[String] =>
+            intents += (action -> list.toSet)
+        }
+      }
+    }
+  }
 
-    case Место_покупки_товара => subs(
-      Set("Подскажите где был куплен товар в магазине или онлайн?",
-        "Покупали в магазине или на сайте?",
-        "Уточните пожалуйста, приобретали в магазине или на нашем сайте?",
-        "Где покупали ваш товар?"), Seq.empty)
-    case Купил_в_магазине => subs(
-      Set("Покупал у вас в магазине",
-        "В магазине",
-        "Да вот возле дома",
-        "Не далеко от дома есть магазин",
-        "Через дорогу магазин, в нем покупал"), Seq.empty)
-    case Купил_онлайн => subs(
-      Set("На сайте заказывал",
-        "В онлайне брал",
-        "Покупал на вашем сайте, забирал в магазине",
-        "На сайте с доставкой до квартиры",
-        "Какой магазин, вы что, в 21 веке живем"), Seq.empty)
+  override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = {
+    subs(intents.getOrElse(action, Set.empty), Seq.empty)
+  }
 
-    case Устраивает_ли_качество_товара => subs(
-      Set("Вас устраивает качество товара?",
-        "Устраивает ли вас качество, приобритенного товара?",
-        "Качество самого товара вас устраивает?",
-        "Вы удовлетворены качеством товара?"), Seq.empty)
-    case Устраивает => subs(Set(
-      "Полностью устраивает",
-      "Конечно",
-      "Да, вполне",
-      "Очень даже не плох",
-      "Нужные мне функции выполняет и я доволен",
-      "Так точно",
-      "А как же",
-      "Да, но все равно хочу вернуть"), Seq.empty)
-    case Не_устраивает => subs(Set(
-      "В том то и дело что нет, иначе бы не обращался",
-      "Совсем не устраивает",
-      "Не устраивает, поэтому и пишу",
-      "Нет, хочу вернуть"), Seq.empty)
-
-    case Является_ли_товар_технически_сложным => subs(
-      Set("Является ли товар технически сложным?",
-        "Ваш товар технически сложный?",
-        "Технически сложный товар, верно?"), Seq.empty)
-    case Является => subs(Set(
-      "Не уверен, но вроде бы да",
-      "Да",
-      "На сколько я помню - да",
-      "Так точно",
-      "Все верно говорите"), Seq.empty)
-    case Не_является => subs(Set(
-      "Кажется нет",
-      "Скорее нет, чем да",
-      "Нет"), Seq.empty)
-
-    case Информацию_о_возврате_технически_сложного_товара => subs(
-      Set("Технически сложный товар можно вернуть оставив заявку в магазине",
-        "Вам придется прийти в магазин и оставить заявку",
-        "В вашем случае пишется заявление в магазине",
-        "Необходимо написать заявление в магазине"), Seq.empty)
-    case Информацию_о_возврате_технически_не_сложного_товара => subs(
-      Set("Просто приходите в магазин и обмениваете товар",
-        "Тогда можно вернуть там же, где и купили без каких либо проблем",
-        "Приходите в любой магазин, там вам смогут обменять"), Seq.empty)
-    case Информацию_о_возврате_товара_когда_устраивает_качество => subs(
-      Set("Подумайте, стоит ли вам менять этот товар, если все таки стоит, то можете подойти в магазин",
-        "С чеком приходите в магазин"), Seq.empty)
-    case Информацию_о_возврате_товара_при_покупке_онлайн => subs(
-      Set("Вы можете остаить заявку возврата на сайте, но все равно придется прийти в магазин для обмена",
-        "Найдите номар заказа и с ним приходите в магазин для совершения обмена"), Seq.empty)
-  }.applyOrElse(action, (_: Script.Action) => subs(Set.empty, Seq.empty))
-
-  override protected def instance(context: Map[String, String]): RuleBased = new LegalBot(context)
+  override protected def instance(context: Map[String, String]): RuleBased = new LegalBot(context, intents)
 }
 
 object LegalBot {
