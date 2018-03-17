@@ -23,7 +23,9 @@ class LegalBot(val context: Map[String, String], private var intents: Map[Action
         case map: java.util.HashMap[String, Any] => map
       }
       val action = map.get("intent") match {
-        case name: String => ConfigAction(name)
+        case name: String => {
+          ConfigAction(name)
+        }
       }
       if (!intents.contains(action)) {
         map.get("templates") match {

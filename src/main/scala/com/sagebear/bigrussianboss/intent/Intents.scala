@@ -23,13 +23,11 @@ object Intents {
   case object Информацию_где_купить_пиво extends Action
 
 
-//  case object Да extends Action
-//  case object Нет extends Action
-//
-//  case object Цель_своего_визита extends Action
-//
-//  case object Место_покупки_товара extends Action
-//
+  val Да: Action = "Да"
+  val Нет: Action = "Нет"
+  val Цель_своего_визита: Action = "Цель своего визита"
+  val Место_покупки_товара: Action = "Место покупки товара"
+
 //  case object Купил_в_магазине extends Action
 //
 //  case object Купил_онлайн extends Action
