@@ -4,7 +4,7 @@ import java.util
 
 import scala.collection.JavaConversions._
 import com.sagebear.bigrussianboss.Script
-import com.sagebear.bigrussianboss.Script.{Action, ConfigAction}
+import com.sagebear.bigrussianboss.Script.Action
 import com.sagebear.bigrussianboss.intent.Intents._
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -15,7 +15,7 @@ class LegalBot(val context: Map[String, String]) extends RuleBased {
     val config = ConfigFactory.load("LegalBot")
 
     val alternatives = config.getConfigList("intents").filter {
-      (c: Config) => c.getString("intent") == action.getClass.getCanonicalName
+      (c: Config) => c.getString("intent") + "$" == action.getClass.getSimpleName
     }.map {
       (c: Config) => c.getStringList("templates").toSet
     }.fold(Set.empty) {
