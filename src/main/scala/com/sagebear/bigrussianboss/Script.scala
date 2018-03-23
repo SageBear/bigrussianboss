@@ -62,7 +62,6 @@ object Script {
     def прощается: Step = Step(this, intent.Intents.Bye)
     def спрашивает(question: Action): Step = Step(this, question)
     def говорит(answer: Action): Step = Step(this, answer)
-    def -(action: Action): Step = Step(this, action)
   }
 
   case object Клиент extends Subject
