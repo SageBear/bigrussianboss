@@ -4,8 +4,10 @@ import com.sagebear.Tree
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents.And
+import com.typesafe.config.Config
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.duration._
 import scala.util.Random
 
 /**
@@ -31,7 +33,7 @@ class Script(children: Seq[Tree[Script.Step]]) {
              rollupCallback: () => Future[String]): Future[String] =
       if (alternatives.isEmpty) Future("")
       else {
-        val node = alternatives.head
+        val node = alternatives(rnd.nextInt(alternatives.length))
         val (speaker, listener, prompt) = if (node.value.speaker == Клиент) (client, operator, ">> ") else (operator, client, ":: ")
         val communicate =
           for {
@@ -52,6 +54,10 @@ class Script(children: Seq[Tree[Script.Step]]) {
 
     step(children, client, operator, () => Future.failed(DoNotUnderstand))
   }
+
+  def generate(client: SensorsAndActuators, operator: SensorsAndActuators)
+              (implicit ec: ExecutionContext, rnd: Random): Stream[String] =
+    Await.result(execute(client, operator), Duration.Inf) #:: generate(client, operator)
 }
 
 object Script {

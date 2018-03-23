@@ -2,10 +2,11 @@ package com.sagebear.bigrussianboss.bot
 
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.intent.Intents._
+import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.util.{Random, Try}
 
-class BeerBot(val context: Map[String, String]) extends RuleBased {
+class BeerBot(val context: Map[String, String]) extends RuleBased(ConfigFactory.empty()) {
   override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = PartialFunction[Script.Action, T] {
     case Вопрос_про_адрес => subs(Set("где ты живешь?", "скажи свой адрес", "ты с каого района, епта?"), Seq.empty)
     case Вопрос_про_телефон => subs(Set("твой телефон?", "цифры телефона скажи, епта", "твоя мобила?"), Seq.empty)
