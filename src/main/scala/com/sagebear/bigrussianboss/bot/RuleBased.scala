@@ -15,7 +15,6 @@ trait RuleBased extends SensorsAndActuators {
   protected def context: Map[String, String]
 
   protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T
-
   protected def instance(context: Map[String, String]): RuleBased
 
   override def observe(text: String)(a: Script.Action)(implicit ec: ExecutionContext): Future[RuleBased] = {
