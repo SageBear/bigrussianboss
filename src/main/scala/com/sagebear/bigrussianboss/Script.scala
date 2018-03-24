@@ -27,6 +27,17 @@ class Script(children: Seq[Tree[Script.Step]]) {
   }
 
   def execute(client: SensorsAndActuators, operator: SensorsAndActuators)(implicit ec: ExecutionContext, rnd: Random): Future[String] = {
+    def findAppropriateListener(observer: (Action) => Future[SensorsAndActuators], alternatives: Seq[Node]): Future[(SensorsAndActuators, Node, Seq[Node])] = {
+      if (alternatives.isEmpty) Future.failed(DoNotUnderstand)
+      else {
+        (for {
+          newListener <- observer(alternatives.head.value.action)
+        } yield (newListener, alternatives.head, alternatives.tail)).recoverWith {
+          case _ => findAppropriateListener(observer, alternatives.tail)
+        }
+      }
+    }
+
     def step(alternatives: Seq[Node],
              client: SensorsAndActuators,
              operator: SensorsAndActuators,
@@ -35,17 +46,18 @@ class Script(children: Seq[Tree[Script.Step]]) {
       else {
         val node = alternatives(rnd.nextInt(alternatives.length))
         val (speaker, listener, prompt) = if (node.value.speaker == Клиент) (client, operator, ">> ") else (operator, client, ":: ")
+
         val communicate =
           for {
             text <- speaker.act(node.value.action)
-            newListener <- listener.observe(text)(node.value.action)
+            (newListener, correctNode, restNodes) <- findAppropriateListener(listener.observe(text), alternatives)
             (newClient, newOperator) = if (node.value.speaker == Клиент) (client, newListener) else (newListener, operator)
-          } yield (text, newClient, newOperator)
+          } yield (text, correctNode, restNodes, newClient, newOperator)
 
         (for {
-          (text, nextClient, nextOperator) <- communicate
-          nextRollupCallback = if (alternatives.tail.nonEmpty) () => step(alternatives.tail, client, operator, rollupCallback) else rollupCallback
-          utterance <- step(node.children, nextClient, nextOperator, nextRollupCallback).map(prompt + text + "\n" + _)
+          (text, correctNode, restNodes, nextClient, nextOperator) <- communicate
+          nextRollupCallback = if (restNodes.nonEmpty) () => step(restNodes, client, operator, rollupCallback) else rollupCallback
+          utterance <- step(correctNode.children, nextClient, nextOperator, nextRollupCallback).map(prompt + text + "\n" + _)
         } yield utterance).recoverWith {
           case CanNotDoThis => rollupCallback()
           case DoNotUnderstand => rollupCallback()
