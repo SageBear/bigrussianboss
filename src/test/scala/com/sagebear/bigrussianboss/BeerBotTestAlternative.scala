@@ -52,7 +52,7 @@ class BeerBotTestAlternative extends FlatSpec {
   private val clientAlternative = ObedientBot.client("чо как", "где мне попить пива?", "прощай").get
 
   it should "understand alternative (in first Пример) chosen from cli" in {
-    assert(Await.result(script_alternativeFirst.execute(clientAlternative, operator), 1.hour) ===
+    assert(Await.result(script_alternativeFirst.execute(clientAlternative, operator), Duration.Inf) ===
       s""">> чо как
          |:: чо как
          |>> где мне попить пива?
@@ -62,7 +62,7 @@ class BeerBotTestAlternative extends FlatSpec {
   }
 
   it should "understand alternative (in second Пример) chosen from cli" in {
-    assert(Await.result(script_alternativeSecond.execute(clientAlternative, operator), 1.hour) ===
+    assert(Await.result(script_alternativeSecond.execute(clientAlternative, operator), Duration.Inf) ===
       s""">> чо как
          |:: чо как
          |>> где мне попить пива?

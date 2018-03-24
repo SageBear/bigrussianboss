@@ -67,7 +67,7 @@ class BeerBotTest extends FlatSpec {
   private val clientRegister = ObedientBot.client("чО КАК", "где мНе поПитЬ пИвА?", "ПроЩаЙ").get
 
   it should "work for robots" in {
-    assert(Await.result(script_forRobots.execute(client, operator), 1.hour) ===
+    assert(Await.result(script_forRobots.execute(client, operator), Duration.Inf) ===
       s""">> чо как
          |:: чо как
          |>> где мне попить пива?
@@ -84,11 +84,11 @@ class BeerBotTest extends FlatSpec {
   }
 
   it should "fail on unknown words" in {
-    assertThrows[RuntimeException](Await.result(script_Simple.execute(clientUnknown, operator), 1.hour))
+    assertThrows[RuntimeException](Await.result(script_Simple.execute(clientUnknown, operator), Duration.Inf))
   }
 
   it should "ignore words register" in {
-    assert(Await.result(script_Simple.execute(clientRegister, operator), 1.hour) ===
+    assert(Await.result(script_Simple.execute(clientRegister, operator), Duration.Inf) ===
       s""">> чО КАК
          |:: чо как
          |>> где мНе поПитЬ пИвА?

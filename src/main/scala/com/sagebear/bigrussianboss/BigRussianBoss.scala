@@ -15,22 +15,6 @@ import scala.language.postfixOps
 import scala.util.Random
 
 object BigRussianBoss extends App {
-  private val script_alternativeSecond = примеры(
-    Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент прощается,
-      Оператор прощается,
-    ),
-    Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент спрашивает Вопрос_про_покупку_пива,
-      Оператор прощается,
-      Клиент прощается
-    )
-  )
-
   private val beerScript = примеры(
    Пример(
       Клиент приветствует,
@@ -126,5 +110,5 @@ object BigRussianBoss extends App {
 
   private val cli = new Cli
 
-  println(Await.result(script_alternativeSecond execute (cli, beerOperator), Duration.Inf))
+  println(Await.result(beerScript execute (cli, beerOperator), Duration.Inf))
 }
