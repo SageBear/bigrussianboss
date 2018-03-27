@@ -1,8 +1,11 @@
 package com.sagebear.bigrussianboss.bot
+import com.sagebear.Bio
 import com.sagebear.Extensions._
+import com.sagebear.{Interpolation, Phrase}
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents._
+import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -11,49 +14,61 @@ import scala.util.Random
   * @author vadim
   * @since 01.02.2018
   */
-trait RuleBased extends SensorsAndActuators {
+abstract class RuleBased(val config: Config) extends SensorsAndActuators {
   protected def context: Map[String, String]
 
-  protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T
+  protected def reflex(action: Script.Action): Seq[Interpolation]
   protected def instance(context: Map[String, String]): RuleBased
 
-  override def observe(text: String)(a: Script.Action)(implicit ec: ExecutionContext): Future[RuleBased] = {
+  private def collect(text: String)(a: Script.Action)(implicit ec: ExecutionContext): Future[Map[String, String]] = {
     a match {
       case And(q1, q2) =>
         for {
-          b1 <- observe(text)(q1)
-          b2 <- observe(text)(q2)
-        } yield this.instance(context)
+          b1 <- collect(text)(q1)
+          b2 <- collect(text)(q2)
+        } yield b1 ++ b2
 
       case _ =>
-        val txt = text.toLowerCase
-
-        def subs(texts: Set[String], v: Seq[String]): Option[Map[String, String]] = {
-          val patterns = texts.map(_.toLowerCase().replace("%s", "(.+)").r(v: _*))
-          patterns.map(_.findFirstMatchIn(txt)).collectFirst {
-            case Some(res) => v.map(arg => arg -> res.group(arg)).toMap
-          }
-        }
-
-        reflex(a, subs).fold[Future[RuleBased]](Future.failed(DoNotUnderstand)) {
-          args => Future(instance(context ++ args))
-        }
+        Future({
+          reflex(a).map(_.get(text)).collectFirst {
+            case Some(args) => args
+          }.getOrElse(throw DoNotUnderstand)
+        })
     }
   }
 
-  override def act(a: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[String] = a match {
+  override def observe(text: String)(a: Script.Action)(implicit ec: ExecutionContext): Future[RuleBased] = {
+    for {
+      args <- collect(text)(a)
+    } yield instance(context ++ args)
+  }
+
+  override def act(a: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[Phrase] = a match {
     case And(q1, q2) =>
       for {
         q1u <- act(q1)
         q2u <- act(q2)
-      } yield s"$q1u и $q2u"
+      } yield Phrase(
+        a,
+        q1u.content + " и " + q2u.content,
+        q1u.bio +: Bio(" и ", "O", single=false) +: q2u.bio
+      )
 
     case _ =>
-      def subs(texts: Set[String], args: Seq[String]): Set[String] = if (args.forall(context.contains)) {
-        val values = args.map(context)
-        texts.map(_.format(values: _*))
-      } else Set.empty
-
-      reflex(a, subs).choose(rnd).fold[Future[String]](Future.failed(CanNotDoThis))(s => Future(s))
+      Future({
+        val alternatives = reflex(a).map(_.put(context)).collect {
+          case Some(text) => text
+        }
+        alternatives.length match {
+          case len if len > 0 =>
+            val alternative = alternatives(rnd.nextInt(len))
+            Phrase(
+              a,
+              alternative.content,
+              alternative.bio()
+            )
+          case _ => throw CanNotDoThis
+        }
+      })
   }
 }

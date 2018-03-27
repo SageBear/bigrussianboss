@@ -1,11 +1,13 @@
 package com.sagebear.bigrussianboss
 
-import com.sagebear.Tree
+import com.sagebear.{Interpolation, Phrase, Tree}
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents.And
+import com.typesafe.config.Config
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.duration._
 import scala.util.Random
 
 /**
@@ -24,26 +26,25 @@ class Script(children: Seq[Tree[Script.Step]]) {
     }
   }
 
-  def execute(client: SensorsAndActuators, operator: SensorsAndActuators)(implicit ec: ExecutionContext, rnd: Random): Future[String] = {
+  def execute(client: SensorsAndActuators, operator: SensorsAndActuators)(implicit ec: ExecutionContext, rnd: Random): Future[Seq[Phrase]] = {
     def step(alternatives: Seq[Node],
              client: SensorsAndActuators,
              operator: SensorsAndActuators,
-             rollupCallback: () => Future[String]): Future[String] =
-      if (alternatives.isEmpty) Future("")
+             rollupCallback: () => Future[Seq[Phrase]]): Future[Seq[Phrase]] =
+      if (alternatives.isEmpty) Future(Seq.empty[Phrase])
       else {
-        val node = alternatives.head
+        val node = alternatives(rnd.nextInt(alternatives.length))
         val (speaker, listener, prompt) = if (node.value.speaker == Клиент) (client, operator, ">> ") else (operator, client, ":: ")
         val communicate =
           for {
-            text <- speaker.act(node.value.action)
-            newListener <- listener.observe(text)(node.value.action)
+            phrase <- speaker.act(node.value.action)
+            newListener <- listener.observe(phrase.toString)(node.value.action)
             (newClient, newOperator) = if (node.value.speaker == Клиент) (client, newListener) else (newListener, operator)
-          } yield (text, newClient, newOperator)
-
+          } yield (phrase, newClient, newOperator)
         (for {
-          (text, nextClient, nextOperator) <- communicate
+          (phrase, nextClient, nextOperator) <- communicate
           nextRollupCallback = if (alternatives.tail.nonEmpty) () => step(alternatives.tail, client, operator, rollupCallback) else rollupCallback
-          utterance <- step(node.children, nextClient, nextOperator, nextRollupCallback).map(prompt + text + "\n" + _)
+          utterance <- step(node.children, nextClient, nextOperator, nextRollupCallback).map(phrase +: _)
         } yield utterance).recoverWith {
           case CanNotDoThis => rollupCallback()
           case DoNotUnderstand => rollupCallback()
@@ -52,6 +53,10 @@ class Script(children: Seq[Tree[Script.Step]]) {
 
     step(children, client, operator, () => Future.failed(DoNotUnderstand))
   }
+
+  def generate(client: SensorsAndActuators, operator: SensorsAndActuators)
+              (implicit ec: ExecutionContext, rnd: Random): Stream[Seq[Phrase]] =
+    Await.result(execute(client, operator), Duration.Inf) #:: generate(client, operator)
 }
 
 object Script {
