@@ -4,7 +4,7 @@ import java.util.Locale
 
 import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
-import com.sagebear.bigrussianboss.bot.{BeerBot, LegalBot}
+import com.sagebear.bigrussianboss.bot.{BeerBot, Cli, LegalBot}
 import com.sagebear.bigrussianboss.intent.Intents._
 import com.typesafe.config.{Config, ConfigFactory}
 
@@ -108,5 +108,7 @@ object BigRussianBoss extends App {
   private val client = LegalBot.client(config).get
   private val operator = LegalBot.operator(config).get
 
-  beerScript generate(beerClient, beerOperator) take 2 foreach println
+  private val cli = new Cli
+
+  Await.result(beerScript.execute(beerClient, beerOperator), Duration.Inf).foreach(p => println(p.bio + "\n"))
 }

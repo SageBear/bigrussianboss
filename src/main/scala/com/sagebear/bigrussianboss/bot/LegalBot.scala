@@ -2,16 +2,21 @@ package com.sagebear.bigrussianboss.bot
 
 import java.util
 
+import com.sagebear.Interpolation
+
 import scala.collection.JavaConverters._
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.Script.Action
 import com.sagebear.bigrussianboss.intent.Intents._
 import com.typesafe.config.{Config, ConfigFactory}
 
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Random, Try}
 
 class LegalBot(val context: Map[String, String], config: Config) extends RuleBased(config) {
-  override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = {
+  override protected def instance(args: Map[String, String]): RuleBased = new LegalBot(context ++ args, config)
+
+  override protected def reflex(action: Script.Action): Seq[Interpolation] = {
     val alternatives = asScalaIterator(config.getConfigList("intents").iterator()).filter {
       (c: Config) => c.getString("intent") + "$" == action.getClass.getSimpleName
     }.map {
@@ -20,10 +25,8 @@ class LegalBot(val context: Map[String, String], config: Config) extends RuleBas
       (acc, part) => acc ++ part
     }
 
-    subs(alternatives, Seq.empty)
+    alternatives.map(Interpolation.apply).toSeq
   }
-
-  override protected def instance(context: Map[String, String]): RuleBased = new LegalBot(context, config)
 }
 
 object LegalBot {

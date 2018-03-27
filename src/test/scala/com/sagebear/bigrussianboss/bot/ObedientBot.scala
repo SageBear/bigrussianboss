@@ -1,5 +1,6 @@
 package com.sagebear.bigrussianboss.bot
 
+import com.sagebear.Phrase
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.CanNotDoThis
 
@@ -11,10 +12,10 @@ class ObedientBot(private val phrases: List[String]) extends SensorsAndActuators
     Future(new ObedientBot(phrases.tail))
   }
 
-  override def act(a: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[String] = {
+  override def act(a: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[Phrase] = {
     this.phrases match {
       case head :: _ =>
-        Future(head)
+        Future(Phrase(head))
       case _ =>
         Future.failed(CanNotDoThis)
     }
