@@ -1,4 +1,5 @@
 package com.sagebear.bigrussianboss.bot
+import com.sagebear.Bio
 import com.sagebear.Extensions._
 import com.sagebear.{Interpolation, Phrase}
 import com.sagebear.bigrussianboss.Script
@@ -47,7 +48,11 @@ abstract class RuleBased(val config: Config) extends SensorsAndActuators {
       for {
         q1u <- act(q1)
         q2u <- act(q2)
-      } yield q1u + Phrase(" и ") + q2u
+      } yield Phrase(
+        a,
+        q1u.content + " и " + q2u.content,
+        q1u.bio +: Bio(" и ", "O", single=false) +: q2u.bio
+      )
 
     case _ =>
       Future({
@@ -58,6 +63,7 @@ abstract class RuleBased(val config: Config) extends SensorsAndActuators {
           case len if len > 0 =>
             val alternative = alternatives(rnd.nextInt(len))
             Phrase(
+              a,
               alternative.content,
               alternative.bio()
             )

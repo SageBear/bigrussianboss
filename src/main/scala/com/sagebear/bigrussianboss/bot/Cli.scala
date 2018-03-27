@@ -1,5 +1,5 @@
 package com.sagebear.bigrussianboss.bot
-import com.sagebear.Phrase
+import com.sagebear.{Bio, Phrase}
 import com.sagebear.bigrussianboss.Script
 import com.typesafe.config.Config
 
@@ -15,7 +15,7 @@ class Cli extends SensorsAndActuators {
 
   override def act(a: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[Phrase] = Future(StdIn.readLine()).flatMap { txt =>
     if (txt == "(_+_)") Future.failed(SensorsAndActuators.CanNotDoThis)
-    else Future(Phrase(txt))
+    else Future(Phrase(a, txt, Bio(txt, "O", single=false)))
   }
 }
 
