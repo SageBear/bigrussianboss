@@ -12,7 +12,7 @@ import scala.util.Random
   * @author vadim
   * @since 01.02.2018
   */
-abstract class RuleBased(val config: Config) extends SensorsAndActuators {
+trait RuleBased extends SensorsAndActuators {
   protected def context: Map[String, String]
 
   protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T
