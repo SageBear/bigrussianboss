@@ -8,9 +8,7 @@ import com.sagebear.bigrussianboss.bot.{BeerBot, Cli, LegalBot}
 import com.sagebear.bigrussianboss.intent.Intents._
 import com.typesafe.config.{Config, ConfigFactory}
 
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Random
 
@@ -105,10 +103,9 @@ object BigRussianBoss extends App {
   private val beerClient = BeerBot.client(clientAddress, clientPhone).get
   private val beerOperator = BeerBot.operator.get
 
-  private val client = LegalBot.client().get
-  private val operator = LegalBot.operator().get
+  private val client = LegalBot.client.get
+  private val operator = LegalBot.operator.get
 
-  private val cli = new Cli
-
-  println(Await.result(beerScript execute (cli, beerOperator), Duration.Inf))
+  // TODO
+  beerScript generate(beerClient, beerOperator) take 2 foreach println
 }
