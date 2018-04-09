@@ -6,7 +6,7 @@ import com.typesafe.config.Config
 
 import scala.util.{Random, Try}
 
-class LegalBot(val context: Map[String, String])(implicit config: Config) extends RuleBased(config) {
+class LegalBot(val context: Map[String, String])(implicit config: Config) extends RuleBased {
   override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = {
     val alternatives = asScalaIterator(config.getConfigList("intents").iterator()).filter {
       (c: Config) => c.getString("intent") + "$" == action.getClass.getSimpleName
