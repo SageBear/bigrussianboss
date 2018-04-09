@@ -1,6 +1,7 @@
 package com.sagebear.bigrussianboss.bot
 
 import com.sagebear.bigrussianboss.Script.Action
+import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -11,7 +12,6 @@ import scala.util.control.NoStackTrace
   */
 trait SensorsAndActuators {
   def observe(text: String)(a: Action)(implicit ec: ExecutionContext): Future[SensorsAndActuators]
-
   def act(a: Action)(implicit ec: ExecutionContext, rnd: Random): Future[String]
 }
 

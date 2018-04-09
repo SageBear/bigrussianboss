@@ -4,43 +4,18 @@ import java.util.Locale
 
 import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
-import com.sagebear.bigrussianboss.bot.{BeerBot, LegalBot}
+import com.sagebear.bigrussianboss.bot.LegalBot
 import com.sagebear.bigrussianboss.intent.Intents._
 import com.typesafe.config.{Config, ConfigFactory}
+import org.scalatest.FlatSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.postfixOps
 import scala.util.Random
 
-object BigRussianBoss extends App {
-  private val beerScript = примеры(
-   Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент спрашивает Вопрос_про_покупку_пива,
-      Оператор спрашивает Вопрос_про_адрес,
-      Клиент говорит Информацию_про_свой_адрес,
-      Оператор говорит Информацию_где_купить_пиво,
-      Оператор прощается,
-      Клиент прощается
-    ),
-    Пример(
-      Клиент приветствует,
-      Оператор приветствует,
-      Клиент спрашивает Вопрос_про_покупку_пива,
-      Оператор спрашивает (Вопрос_про_телефон и Вопрос_про_адрес),
-      Клиент говорит Информацию_про_свой_адрес,
-      Оператор спрашивает Вопрос_про_телефон,
-      Клиент говорит Глупости,
-      Оператор спрашивает Вопрос_про_телефон,
-      Клиент говорит Информацию_про_свой_телефон,
-      Оператор говорит Информацию_где_купить_пиво,
-      Оператор прощается,
-      Клиент прощается
-    )
-  )
 
-  private val legalScript = примеры(
+class LegalBotTestGenerator extends FlatSpec {
+  private val script = примеры(
     Пример(
       Клиент приветствует,
       Оператор приветствует,
@@ -49,7 +24,7 @@ object BigRussianBoss extends App {
       Клиент говорит Купил_в_магазине,
       Оператор спрашивает Устраивает_ли_качество_товара,
       Клиент говорит Не_устраивает,
-      Оператор спрашивает  Является_ли_товар_технически_сложным,
+      Оператор спрашивает Является_ли_товар_технически_сложным,
       Клиент говорит Является,
       Оператор спрашивает Информацию_о_возврате_технически_сложного_товара,
       Клиент прощается,
@@ -94,18 +69,18 @@ object BigRussianBoss extends App {
   )
 
   private implicit val rnd: Random = new Random(0)
-  private implicit val config: Config = ConfigFactory.load("LegalBot")
+  private implicit val config: Config = ConfigFactory.load("LegalBotSingleAlternative")
 
   private val faker = new Faker(new Locale("ru"))
 
   private val clientAddress = faker.address().streetAddress()
   private val clientPhone = faker.phoneNumber().cellPhone()
-  private val beerClient = BeerBot.client(clientAddress, clientPhone).get
-  private val beerOperator = BeerBot.operator.get
 
-  private val client = LegalBot.client.get
-  private val operator = LegalBot.operator.get
+  private val client = LegalBot.client().get
+  private val operator = LegalBot.operator().get
 
-  // TODO
-  beerScript generate(beerClient, beerOperator) take 2 foreach println
+  it should "generate different dialogs" in {
+    assert(script.generate(client, operator).take(1000).toSet.size > 1)
+  }
+
 }

@@ -2,7 +2,7 @@ package com.sagebear.bigrussianboss.bot
 
 import java.util
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.Script.Action
 import com.sagebear.bigrussianboss.intent.Intents._
@@ -10,16 +10,14 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.util.{Random, Try}
 
-class LegalBot(val context: Map[String, String]) extends RuleBased {
+class LegalBot(val context: Map[String, String])(implicit config: Config) extends RuleBased {
   override protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T = {
-    val config = ConfigFactory.load("LegalBot")
-
-    val alternatives = config.getConfigList("intents").filter {
+    val alternatives = asScalaIterator(config.getConfigList("intents").iterator()).filter {
       (c: Config) => c.getString("intent") + "$" == action.getClass.getSimpleName
     }.map {
-      (c: Config) => c.getStringList("templates").toSet
+      (c: Config) => asScalaBuffer(c.getStringList("templates")).toSet
     }.fold(Set.empty) {
-      (all, part) => all ++ part
+      (acc, part) => acc ++ part
     }
 
     subs(alternatives, Seq.empty)
@@ -29,7 +27,6 @@ class LegalBot(val context: Map[String, String]) extends RuleBased {
 }
 
 object LegalBot {
-  def client(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty))
-
-  def operator(implicit rnd: Random = Random): Try[LegalBot] = Try(new LegalBot(Map.empty))
+  def client()(implicit rnd: Random = Random, config: Config): Try[LegalBot] = Try(new LegalBot(Map.empty))
+  def operator()(implicit rnd: Random = Random, config: Config): Try[LegalBot] = Try(new LegalBot(Map.empty))
 }

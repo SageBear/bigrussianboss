@@ -6,6 +6,7 @@ import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
 import com.sagebear.bigrussianboss.bot._
 import com.sagebear.bigrussianboss.intent.Intents._
+import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.FlatSpec
 
 import scala.concurrent.Await
@@ -53,6 +54,7 @@ class BeerBotTest extends FlatSpec {
   )
 
   private implicit val rnd: Random = new Random(0)
+
   private val faker = new Faker(new Locale("ru"))
 
   private val clientAddress = faker.address().streetAddress()
@@ -68,9 +70,13 @@ class BeerBotTest extends FlatSpec {
     assert(Await.result(script_forRobots.execute(client, operator), 1.hour) ===
       s""">> чо как
          |:: чо как
-         |>> где найти пива?
-         |:: скажи свой адрес
+         |>> где мне попить пива?
+         |:: цифры телефона скажи, епта и скажи свой адрес
          |>> я живу на $clientAddress
+         |:: цифры телефона скажи, епта
+         |>> епта
+         |:: твой телефон?
+         |>> $clientPhone моя мобила
          |:: иди в ближайший к ${clientAddress.toLowerCase()} ларек
          |:: прощай
          |>> прощай
