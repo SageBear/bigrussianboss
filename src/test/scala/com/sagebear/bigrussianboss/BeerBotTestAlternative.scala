@@ -3,7 +3,6 @@ package com.sagebear.bigrussianboss
 import com.sagebear.bigrussianboss.Script._
 import com.sagebear.bigrussianboss.bot.{ObedientBot, _}
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.FlatSpec
 
 import scala.concurrent.Await
@@ -42,7 +41,7 @@ class BeerBotTestAlternative extends FlatSpec {
       Оператор приветствует,
       Клиент спрашивает Вопрос_про_покупку_пива,
       Оператор прощается,
-      Клиент прощается
+      Клиент прощается,
     )
   )
 
@@ -52,7 +51,7 @@ class BeerBotTestAlternative extends FlatSpec {
   private val clientAlternative = ObedientBot.client("чо как", "где мне попить пива?", "прощай").get
 
   it should "understand alternative (in first Пример) chosen from cli" in {
-    assert(Await.result(script_alternativeFirst.execute(clientAlternative, operator), 1.hour) ===
+    assert(Await.result(script_alternativeFirst.execute(clientAlternative, operator), 1 minute) ===
       s""">> чо как
          |:: чо как
          |>> где мне попить пива?
@@ -62,7 +61,7 @@ class BeerBotTestAlternative extends FlatSpec {
   }
 
   it should "understand alternative (in second Пример) chosen from cli" in {
-    assert(Await.result(script_alternativeSecond.execute(clientAlternative, operator), 1.hour) ===
+    assert(Await.result(script_alternativeSecond.execute(clientAlternative, operator), 1 minute) ===
       s""">> чо как
          |:: чо как
          |>> где мне попить пива?

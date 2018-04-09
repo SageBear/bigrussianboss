@@ -1,6 +1,5 @@
 package com.sagebear.bigrussianboss.bot
 import com.sagebear.bigrussianboss.Script
-import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.io.StdIn

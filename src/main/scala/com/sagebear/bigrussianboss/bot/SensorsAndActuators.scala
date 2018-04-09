@@ -1,7 +1,6 @@
 package com.sagebear.bigrussianboss.bot
 
 import com.sagebear.bigrussianboss.Script.Action
-import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random

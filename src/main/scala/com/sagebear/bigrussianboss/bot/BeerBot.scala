@@ -2,7 +2,6 @@ package com.sagebear.bigrussianboss.bot
 
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
 
 import scala.util.{Random, Try}
 

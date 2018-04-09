@@ -1,12 +1,8 @@
 package com.sagebear.bigrussianboss.bot
 
-import java.util
-
 import scala.collection.JavaConverters._
 import com.sagebear.bigrussianboss.Script
-import com.sagebear.bigrussianboss.Script.Action
-import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 
 import scala.util.{Random, Try}
 

@@ -6,7 +6,6 @@ import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
 import com.sagebear.bigrussianboss.bot._
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.FlatSpec
 
 import scala.concurrent.Await
@@ -67,7 +66,7 @@ class BeerBotTest extends FlatSpec {
   private val clientRegister = ObedientBot.client("чО КАК", "где мНе поПитЬ пИвА?", "ПроЩаЙ").get
 
   it should "work for robots" in {
-    assert(Await.result(script_forRobots.execute(client, operator), 1.hour) ===
+    assert(Await.result(script_forRobots.execute(client, operator), 1 minute) ===
       s""">> чо как
          |:: чо как
          |>> где мне попить пива?
@@ -84,11 +83,11 @@ class BeerBotTest extends FlatSpec {
   }
 
   it should "fail on unknown words" in {
-    assertThrows[RuntimeException](Await.result(script_Simple.execute(clientUnknown, operator), 1.hour))
+    assertThrows[RuntimeException](Await.result(script_Simple.execute(clientUnknown, operator), 1 minute))
   }
 
   it should "ignore words register" in {
-    assert(Await.result(script_Simple.execute(clientRegister, operator), 1.hour) ===
+    assert(Await.result(script_Simple.execute(clientRegister, operator), 1 minute) ===
       s""">> чО КАК
          |:: чо как
          |>> где мНе поПитЬ пИвА?
