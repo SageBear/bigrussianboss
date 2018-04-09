@@ -6,7 +6,6 @@ import com.github.javafaker.Faker
 import com.sagebear.bigrussianboss.Script._
 import com.sagebear.bigrussianboss.bot._
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.FlatSpec
 
 import scala.concurrent.Await

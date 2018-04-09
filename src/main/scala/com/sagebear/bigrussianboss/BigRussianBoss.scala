@@ -96,7 +96,7 @@ object BigRussianBoss extends App {
   )
 
   private implicit val rnd: Random = new Random(0)
-  private val config: Config = ConfigFactory.load("LegalBot")
+  private implicit val config: Config = ConfigFactory.load("LegalBot")
 
   private val faker = new Faker(new Locale("ru"))
 
@@ -105,8 +105,8 @@ object BigRussianBoss extends App {
   private val beerClient = BeerBot.client(clientAddress, clientPhone).get
   private val beerOperator = BeerBot.operator.get
 
-  private val client = LegalBot.client(config).get
-  private val operator = LegalBot.operator(config).get
+  private val client = LegalBot.client().get
+  private val operator = LegalBot.operator().get
 
   private val cli = new Cli
 

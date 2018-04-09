@@ -4,9 +4,8 @@ import com.sagebear.Tree
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents.And
-import com.typesafe.config.Config
 
-import scala.concurrent.{Await, ExecutionContext, Future, blocking}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -44,9 +43,8 @@ class Script(children: Seq[Tree[Script.Step]]) {
              rollupCallback: () => Future[String]): Future[String] =
       if (alternatives.isEmpty) Future("")
       else {
-        val (left, right) = alternatives.splitAt(rnd.nextInt(alternatives.length))
-        val (node, newRight) = (right.head, right.tail)
-        val newAlternatives = left ++ newRight
+        val shuffledAlternatives = rnd.shuffle(alternatives)
+        val (node, restAlternatives) = (shuffledAlternatives.head, shuffledAlternatives.tail)
 
         val (speaker, listener, prompt) = if (node.value.speaker == Клиент) (client, operator, ">> ") else (operator, client, ":: ")
 
@@ -54,7 +52,7 @@ class Script(children: Seq[Tree[Script.Step]]) {
         val communicate =
           for {
             text <- text
-            (newListener, correctNode, restAlternatives) <- findAppropriateListener(listener.observe(text), node +: newAlternatives)
+            (newListener, correctNode, restAlternatives) <- findAppropriateListener(listener.observe(text), node +: restAlternatives)
             (newClient, newOperator) = if (node.value.speaker == Клиент) (client, newListener) else (newListener, operator)
           } yield (text, correctNode, restAlternatives, newClient, newOperator)
 
@@ -68,7 +66,10 @@ class Script(children: Seq[Tree[Script.Step]]) {
           utterance <- step(correctNode.children, nextClient, nextOperator, nextRollupCallback).map(prompt + text + "\n" + _)
         } yield utterance).recoverWith {
           case CanNotDoThis => rollupCallback()
-          case DoNotUnderstand => rollupCallback().map(prompt + text.value.get.get + "\n" + _)
+          case DoNotUnderstand => text.isCompleted match {
+            case true => rollupCallback().map(prompt + text.value.get.get + "\n" + _)
+            case false => rollupCallback()
+          }
         }
       }
 

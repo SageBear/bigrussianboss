@@ -69,15 +69,15 @@ class LegalBotTestGenerator extends FlatSpec {
   )
 
   private implicit val rnd: Random = new Random(0)
-  private val config: Config = ConfigFactory.load("LegalBotSingleAlternative")
+  private implicit val config: Config = ConfigFactory.load("LegalBotSingleAlternative")
 
   private val faker = new Faker(new Locale("ru"))
 
   private val clientAddress = faker.address().streetAddress()
   private val clientPhone = faker.phoneNumber().cellPhone()
 
-  private val client = LegalBot.client(config).get
-  private val operator = LegalBot.operator(config).get
+  private val client = LegalBot.client().get
+  private val operator = LegalBot.operator().get
 
   it should "generate different dialogs" in {
     assert(script.generate(client, operator).take(1000).toSet.size > 1)

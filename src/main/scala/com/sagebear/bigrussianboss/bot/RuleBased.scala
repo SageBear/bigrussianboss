@@ -3,7 +3,6 @@ import com.sagebear.Extensions._
 import com.sagebear.bigrussianboss.Script
 import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -12,7 +11,7 @@ import scala.util.Random
   * @author vadim
   * @since 01.02.2018
   */
-abstract class RuleBased(val config: Config) extends SensorsAndActuators {
+trait RuleBased extends SensorsAndActuators {
   protected def context: Map[String, String]
 
   protected def reflex[T](action: Script.Action, subs: (Set[String], Seq[String]) => T): T

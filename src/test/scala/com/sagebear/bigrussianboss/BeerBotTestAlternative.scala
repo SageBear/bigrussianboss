@@ -3,7 +3,6 @@ package com.sagebear.bigrussianboss
 import com.sagebear.bigrussianboss.Script._
 import com.sagebear.bigrussianboss.bot.{ObedientBot, _}
 import com.sagebear.bigrussianboss.intent.Intents._
-import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.FlatSpec
 
 import scala.concurrent.Await
