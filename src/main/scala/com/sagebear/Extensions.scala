@@ -1,8 +1,108 @@
 package com.sagebear
 
+import java.util.MissingFormatArgumentException
+
 import scala.util.Random
+import scala.util.matching.Regex
 
 object Extensions {
+
+  implicit class StringTemplate(template: String) {
+
+    /**
+      *
+      * @param name   - variable name
+      * @param bioTag - variable type to create bio
+      */
+    private case class Variable(name: String, bioTag: String)
+
+    /**
+      * Pattern to recognise variables in present [[template]]
+      * Note: variable should look like "&{name: bioTag}"
+      */
+    private val variablePattern: Regex = new Regex("""[&][{](\w+)\s*[:]\s*(\w+)[}]""", "name", "bioTag")
+
+    /**
+      * Construct pattern to recognise [[template]] in text
+      *
+      * @note 1. Ignore cases
+      *       2. Work with unicode
+      *       3. Escape regex specials *, ?, ., etc.
+      */
+    private lazy val templatePattern: Regex = {
+      new Regex("(?iU)^" + variablePattern.replaceAllIn(
+        """[()*.?\[\]]""".r.replaceAllIn(template, """\\""" + _), "(.*)") + "$",
+        variables.map(_.name): _*)
+    }
+
+    /**
+      * Variables from [[template]]
+      */
+    private lazy val variables: List[Variable] =
+      variablePattern.findAllMatchIn(template).foldRight(List.empty[Variable]) {
+        (matcher, acc) => Variable(matcher.group("name"), matcher.group("bioTag")) :: acc
+      }
+
+    /**
+      * Substitute variables into [[template]]
+      *
+      * @param vars - variables to be substitute
+      * @return StringExtension
+      * @throws MissingFormatArgumentException - when vars doesn't contain all of [[variables]]
+      */
+    def substitute(vars: Map[String, String]): String =
+      variablePattern.replaceAllIn(template, (replacer) => {
+        vars.getOrElse(replacer.group("name"), throw new MissingFormatArgumentException(replacer.group("name")))
+      })
+
+    /**
+      *
+      * @param vars      - variables to be substitute
+      * @param tokenizer - tokenizer
+      * @return (String, Bio) - substituted string and bio to it
+      * @throws MissingFormatArgumentException - when vars doesn't contain all of [[variables]]
+      */
+    def substituteWithBio(vars: Map[String, String], tokenizer: Regex = Bio.defaultTokenizer): (String, Bio) =
+      (substitute(vars), bio(vars, tokenizer))
+
+    /**
+      * Collect variables from first entry according to [[templatePattern]] in present string
+      *
+      * @param string - target text
+      * @return Some(Map[String, String]) - of founded information
+      *         None - if match was not found
+      */
+    def parse(string: String): Option[Map[String, String]] = {
+      templatePattern.findFirstMatchIn(string) match {
+        case Some(matcher) =>
+          Some(variables.foldRight(Map.empty[String, String]) {
+            (variable, acc) => acc + (variable.name -> matcher.group(variable.name))
+          })
+        case None => None
+      }
+    }
+
+    /**
+      * Create bio information according to [[template]] and vars
+      *
+      * @param vars      - variables to be substitute
+      * @param tokenizer - bio tokenizer
+      * @return Bio to the substituted [[template]]
+      * @throws MissingFormatArgumentException - when vars doesn't contain all of [[variables]]
+      */
+    def bio(vars: Map[String, String], tokenizer: Regex = Bio.defaultTokenizer): Bio = {
+      val otherBio = variablePattern.split(template).map(Bio(_, tokenizer))
+      val varBio = variables.map((variable) =>
+        Bio(vars.getOrElse(variable.name, throw new MissingFormatArgumentException(variable.name)), variable.bioTag, tokenizer))
+
+      otherBio.zipAll(varBio, Bio.empty, Bio.empty).foldRight(Bio.empty) {
+        case ((oBio, vBio), acc) => oBio ::: vBio ::: acc
+      }
+    }
+
+    override def toString: String = template
+  }
+
   implicit class SetExtension[T](set: Set[T]) {
     def choose(rnd: Random): Option[T] = rnd.shuffle(set).headOption
   }

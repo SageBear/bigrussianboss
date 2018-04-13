@@ -1,13 +1,13 @@
 package com.sagebear.bigrussianboss
 
-import com.sagebear.{Interpolation, Phrase, Tree}
-import com.sagebear.bigrussianboss.bot.SensorsAndActuators
-import com.sagebear.bigrussianboss.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
+import com.sagebear.Dialog.Phrase
+import com.sagebear.bigrussianboss.ScriptTest.bot.SensorsAndActuators
+import com.sagebear.bigrussianboss.ScriptTest.bot.SensorsAndActuators.{CanNotDoThis, DoNotUnderstand}
 import com.sagebear.bigrussianboss.intent.Intents.And
-import com.typesafe.config.Config
+import com.sagebear.{Bio, Dialog, Tree}
 
-import scala.concurrent.{Await, ExecutionContext, Future, blocking}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.Random
 
 /**
@@ -26,37 +26,80 @@ class Script(children: Seq[Tree[Script.Step]]) {
     }
   }
 
-  def execute(client: SensorsAndActuators, operator: SensorsAndActuators)(implicit ec: ExecutionContext, rnd: Random): Future[Seq[Phrase]] = {
-    def step(alternatives: Seq[Node],
-             client: SensorsAndActuators,
-             operator: SensorsAndActuators,
-             rollupCallback: () => Future[Seq[Phrase]]): Future[Seq[Phrase]] =
-      if (alternatives.isEmpty) Future(Seq.empty[Phrase])
-      else {
-        val node = alternatives(rnd.nextInt(alternatives.length))
-        val (speaker, listener, prompt) = if (node.value.speaker == Клиент) (client, operator, ">> ") else (operator, client, ":: ")
-        val communicate =
-          for {
-            phrase <- speaker.act(node.value.action)
-            newListener <- listener.observe(phrase.toString)(node.value.action)
-            (newClient, newOperator) = if (node.value.speaker == Клиент) (client, newListener) else (newListener, operator)
-          } yield (phrase, newClient, newOperator)
+  private def execute[A, W, T](client: SensorsAndActuators, operator: SensorsAndActuators,
+                               act: (SensorsAndActuators, Action) => Future[A],
+                               getText: (A) => String, wrap: (Step, A) => W, addition: (W, T) => T,
+                               acc: T)
+                              (implicit ec: ExecutionContext, rnd: Random): Future[T] = {
+
+    def findAppropriateListener(observer: (Action) => Future[SensorsAndActuators],
+                                alternatives: Seq[Node]): Future[(SensorsAndActuators, Node, Seq[Node])] =
+      alternatives match {
+        case Nil => Future.failed(DoNotUnderstand)
+        case _ =>
+          (for {
+            updatedListener <- observer(alternatives.head.value.action)
+          } yield (updatedListener, alternatives.head, alternatives.tail)).recoverWith {
+            case _ => findAppropriateListener(observer, alternatives.tail)
+          }
+      }
+
+    def step(alternatives: Seq[Node], client: SensorsAndActuators, operator: SensorsAndActuators,
+             rollupCallback: () => Future[T]): Future[T] = alternatives match {
+      case Nil => Future(acc)
+      case _ =>
+        val shuffledAlternatives = rnd.shuffle(alternatives)
+        val currentStep = shuffledAlternatives.head.value
+        val (speaker, listener) = if (currentStep.speaker == Клиент) (client, operator) else (operator, client)
+
+        val communicator = for {
+          acted <- act(speaker, currentStep.action)
+          (updatedListener, node, restAlternatives) <-
+            findAppropriateListener(listener.observe(getText(acted)), shuffledAlternatives)
+          (newClient, newOperator) = if (node.value.speaker == Клиент) {
+            (client, updatedListener)
+          } else {
+            (updatedListener, operator)
+          }
+        } yield (newClient, newOperator, wrap(node.value, acted), node, restAlternatives)
+
         (for {
-          (phrase, nextClient, nextOperator) <- communicate
-          nextRollupCallback = if (alternatives.tail.nonEmpty) () => step(alternatives.tail, client, operator, rollupCallback) else rollupCallback
-          utterance <- step(node.children, nextClient, nextOperator, nextRollupCallback).map(phrase +: _)
+          (newClient, newOperator, wrapped, node, restAlternatives) <- communicator
+          nextRollupCallback = if (restAlternatives.nonEmpty) {
+            () => step(restAlternatives, client, operator, rollupCallback)
+          } else rollupCallback
+
+          utterance <- step(node.children, newClient, newOperator, nextRollupCallback).map(addition(wrapped, _))
         } yield utterance).recoverWith {
           case CanNotDoThis => rollupCallback()
-          case DoNotUnderstand => rollupCallback()
+          case DoNotUnderstand => if (communicator.isCompleted) {
+            rollupCallback().map(addition(communicator.value.get.get._3, _))
+          } else {
+            rollupCallback()
+          }
         }
-      }
+    }
 
     step(children, client, operator, () => Future.failed(DoNotUnderstand))
   }
 
+  def run(client: SensorsAndActuators, operator: SensorsAndActuators)
+         (implicit ec: ExecutionContext, rnd: Random): Future[String] =
+    execute(client, operator,
+      (bot: SensorsAndActuators, action: Action) => bot.act(action),
+      (text: String) => text, (step: Step, text: String) => (if (step.speaker == Клиент) ">> " else ":: ") + text,
+      (text: String, dialog: String) => text + "\n" + dialog,
+      "")
+
   def generate(client: SensorsAndActuators, operator: SensorsAndActuators)
-              (implicit ec: ExecutionContext, rnd: Random): Stream[Seq[Phrase]] =
-    Await.result(execute(client, operator), Duration.Inf) #:: generate(client, operator)
+              (implicit ec: ExecutionContext, rnd: Random): Stream[Dialog] =
+    Await.result(
+      execute(client, operator,
+        (bot: SensorsAndActuators, action: Action) => bot.actWithBio(action),
+        (acted: (String, Bio)) => acted._1, (step: Step, acted: (String, Bio)) => Phrase(step, acted._1, acted._2),
+        (phrase: Phrase, dialog: Dialog) => phrase :: dialog,
+        Dialog.empty),
+      Duration.Inf) #:: generate(client, operator)
 }
 
 object Script {

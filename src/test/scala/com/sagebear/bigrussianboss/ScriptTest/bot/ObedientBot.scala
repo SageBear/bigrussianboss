@@ -1,10 +1,11 @@
-package com.sagebear.bigrussianboss.bot
+package com.sagebear.bigrussianboss.ScriptTest.bot
 
-import com.sagebear.{Bio, Phrase}
+import com.sagebear.Bio
 import com.sagebear.bigrussianboss.Script
-import com.sagebear.bigrussianboss.bot.SensorsAndActuators.CanNotDoThis
+import com.sagebear.bigrussianboss.ScriptTest.bot.SensorsAndActuators.CanNotDoThis
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.matching.Regex
 import scala.util.{Random, Try}
 
 class ObedientBot(private val phrases: List[String]) extends SensorsAndActuators {
@@ -12,14 +13,18 @@ class ObedientBot(private val phrases: List[String]) extends SensorsAndActuators
     Future(new ObedientBot(phrases.tail))
   }
 
-  override def act(a: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[Phrase] = {
+  override def act(action: Script.Action)(implicit ec: ExecutionContext, rnd: Random): Future[String] = {
     this.phrases match {
       case head :: _ =>
-        Future(Phrase(a, head, Bio(head, "O", single=false)))
+        Future(head)
       case _ =>
         Future.failed(CanNotDoThis)
     }
   }
+
+  override def actWithBio(action: Script.Action, tokenizer: Regex)
+                         (implicit ec: ExecutionContext, rnd: Random): Future[(String, Bio)] =
+    act(action).map((text) => (text, Bio(text, tokenizer)))
 }
 
 object ObedientBot {

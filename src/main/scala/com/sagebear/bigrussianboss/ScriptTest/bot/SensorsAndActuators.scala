@@ -1,18 +1,22 @@
-package com.sagebear.bigrussianboss.bot
+package com.sagebear.bigrussianboss.ScriptTest.bot
 
-import com.sagebear.Phrase
+import com.sagebear.Bio
 import com.sagebear.bigrussianboss.Script.Action
-import com.typesafe.config.Config
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 import scala.util.control.NoStackTrace
+import scala.util.matching.Regex
+
 /**
   * @author vadim
   * @since 30.01.2018
   */
 trait SensorsAndActuators {
-  def act(a: Action)(implicit ec: ExecutionContext, rnd: Random): Future[Phrase]
+  def act(action: Action)(implicit ec: ExecutionContext, rnd: Random): Future[String]
+
+  def actWithBio(action: Action, tokenizer: Regex = Bio.defaultTokenizer)
+                (implicit ec: ExecutionContext, rnd: Random): Future[(String, Bio)]
   def observe(text: String)(a: Action)(implicit ec: ExecutionContext): Future[SensorsAndActuators]
 }
 
